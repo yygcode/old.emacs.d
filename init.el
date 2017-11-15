@@ -37,8 +37,8 @@
   (package-refresh-contents))
 
 ;; load with noerror
-;; (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
-;; (load custom-file t)
+(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(load custom-file t)
 
 (unless (package-installed-p 'use-package)
   (progn
