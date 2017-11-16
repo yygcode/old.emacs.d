@@ -311,7 +311,9 @@ FIXME: who require abbrev ? analyse delayed, diminish it now
     :config
     (progn
       (setq org-directory "~/org")
-      (setq org-agenda-files (list org-directory))
+      (setq org-agenda-files (list org-directory
+                                   (concat org-directory "/i")
+                                   (concat org-directory "/p")))
       (setq org-default-notes-file (concat org-directory "/notes.org")))
     :bind
     (("C-c c" . org-capture)
