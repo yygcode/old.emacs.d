@@ -378,12 +378,12 @@ FIXME: who require abbrev ? analyse delayed, diminish it now
     (setq org-export-with-section-numbers 't)
     (setq org-html-preamble nil)
     (setq org-html-postamble nil)
-    (when (file-exists-p "~/hp/src/css/site.css")
+    (when (file-exists-p "~/hp/css/site.css")
       (setq org-html-head
             (concat
              "<style type=\"text/css\">"
              (with-temp-buffer
-               (insert-file "~/hp/src/css/site.css")
+               (insert-file "~/hp/css/site.css")
                (buffer-string))
              "</style>")))
     ;; see org-html-style-default
