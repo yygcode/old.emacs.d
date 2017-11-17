@@ -22,8 +22,9 @@
 * Basic
 ** environment
 #+BEGIN_SRC emacs-lisp
-  (add-to-list 'exec-path "/usr/local/bin")
-  (add-to-list 'exec-path "/usr/local/sbin")
+  (unless (string-equal system-type "windows-nt")
+    (add-to-list 'exec-path "/usr/local/bin")
+    (add-to-list 'exec-path "/usr/local/sbin"))
 #+END_SRC
 ** ui
 - disable startup screen
@@ -1138,12 +1139,15 @@ empty-defun-braces))
 ** Emms
 - Homepage: [[https://www.gnu.org/software/emms/][gnu emms]]
 #+BEGIN_SRC emacs-lisp
+  (add-to-list 'exec-path "c:/win-customize/mplayer-svn-3799/")
+  (add-to-list 'exec-path "c:/Program Files (x86)/VideoLAN/VLC/")
   (use-package emms
     :config
     (emms-standard)
     (emms-default-players)
-    (setq emms-playlist-buffer-name "Music-EMMS")
-    (setq emms-source-file-default-directory "~/Music/"))
+    (setq emms-playlist-buffer-name "*Emms*")
+    (setq emms-source-file-default-directory "~/music/")
+    (setq emms-player-list '(emms-player-mplayer)))
   (use-package emms-player-mplayer
     :ensure emms
     :config
@@ -1154,7 +1158,6 @@ empty-defun-braces))
                     ".rm" ".rmvb" ".mp4" ".flac" ".vob" ".m4a" ".flv" ".ogv" ".pls"))
       "mplayer" "-slave" "-quiet" "-really-quiet" "-fullscreen")))
   (require 'emms-playing-time)
-
 #+END_SRC
 * Browser
 #+BEGIN_SRC emacs-lisp
