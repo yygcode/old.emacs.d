@@ -26,6 +26,17 @@
     (add-to-list 'exec-path "/usr/local/bin")
     (add-to-list 'exec-path "/usr/local/sbin"))
 #+END_SRC
+** coding system
+- See [[https://www.gnu.org/software/emacs/manual/html_node/emacs/International.html#International][Manual International]] and [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Non_002dASCII-Characters.html#Non_002dASCII-Characters][Non-ASCII Characters]] for more details
+- Reset *default-process-coding-system* to local coding system for subprocess
+  will parse failed. (e.g.: emms + mplayer)
+#+BEGIN_SRC emacs-lisp
+  ;; Always want to use UTF-8, unix eol.
+  ;; But collaborations with subprocess require local coding system
+  (prefer-coding-system 'utf-8-unix)
+  (when (string-equal current-language-environment "Chinese-GBK")
+    (setq default-process-coding-system '(utf-8-unix . chinese-gbk-dos)))
+#+END_SRC
 ** ui
 - disable startup screen
 - customize scratch message
@@ -164,14 +175,6 @@
   (advice-add 'linum-on :around #'linum-on-around)
 
 #+END_SRC
-** coding
-*** the default coding system set to utf-8-unix
-#+BEGIN_SRC emacs-lisp
-  (set-terminal-coding-system 'utf-8-unix)
-  (set-keyboard-coding-system 'utf-8-unix)
-  (prefer-coding-system 'utf-8-unix)
-#+END_SRC
-
 ** font
 *** Default font set to Adobe Source Code Pro for english, YaHei for CJK.
 #+BEGIN_SRC emacs-lisp
