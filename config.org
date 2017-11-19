@@ -1148,7 +1148,7 @@ empty-defun-braces))
 - Homepage: [[https://www.gnu.org/software/emms/][gnu emms]]
 - Download players under windows: [[https://www.mpg123.de/download/win64][mpg123 win64]], [[https://sourceforge.net/projects/mplayerwin/][mplayer]]
 #+BEGIN_SRC emacs-lisp
-  (add-to-list 'exec-path "c:/win-customize/mplayer-svn-3799/")
+  (add-to-list 'exec-path "c:/mplayer")
   (add-to-list 'exec-path "c:/Program Files (x86)/VideoLAN/VLC/")
   (use-package emms
     :ensure emms
