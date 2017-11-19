@@ -408,6 +408,9 @@ FIXME: who require abbrev ? analyse delayed, diminish it now
              :base-directory "~/hp/src/"
              :publishing-directory "~/hp/"
              :recursive nil
+             :with-author t
+             :with-date t
+             :with-email t
              :html-head-include-default-style nil
              :html-head "<link rel=\"shortcut icon\" href=\"http://ycode.org/css/favicon.ico\" />
   <link rel=\"stylesheet\" type=\"text/css\" href=\"css/site.css\" />"
