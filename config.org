@@ -304,6 +304,11 @@ FIXME: who require abbrev ? analyse delayed, diminish it now
   (when (string-equal system-type "gnu/linux")
     (desktop-save-mode 1))
 #+END_SRC
+** exit
+- Ignore kill process confirmation when Emacs exit
+#+BEGIN_SRC emacs-lisp
+  (setq confirm-kill-processes nil)
+#+END_SRC
 * Org                                                        :agenda:capture:
 ** basic
 #+BEGIN_SRC emacs-lisp
@@ -1141,26 +1146,48 @@ empty-defun-braces))
 * MultiMedia
 ** Emms
 - Homepage: [[https://www.gnu.org/software/emms/][gnu emms]]
+- Download players under windows: [[https://www.mpg123.de/download/win64][mpg123 win64]], [[https://sourceforge.net/projects/mplayerwin/][mplayer]]
 #+BEGIN_SRC emacs-lisp
   (add-to-list 'exec-path "c:/win-customize/mplayer-svn-3799/")
   (add-to-list 'exec-path "c:/Program Files (x86)/VideoLAN/VLC/")
   (use-package emms
-    :config
-    (emms-standard)
-    (emms-default-players)
-    (setq emms-playlist-buffer-name "*Emms*")
-    (setq emms-source-file-default-directory "~/music/")
-    (setq emms-player-list '(emms-player-mplayer)))
-  (use-package emms-player-mplayer
     :ensure emms
     :config
     (progn
+      (require 'emms-setup)
+      (setq emms-playlist-buffer-name "*Emms*")
+      (setq emms-source-file-default-directory "~/music/")
+      (emms-all) ;; load all stable features
+      ;; use default config - (setq emms-player-list '(emms-player-mplayer))
+      (emms-default-players)
+
+      (require 'emms-player-mplayer)
       (define-emms-simple-player mplayer '(file url)
-      (regexp-opt '(".ogg" ".mp3" ".wav" ".mpg" ".mpeg" ".wmv" ".wma"
-                    ".mov" ".avi" ".divx" ".ogm" ".asf" ".mkv" "http://" "mms://"
-                    ".rm" ".rmvb" ".mp4" ".flac" ".vob" ".m4a" ".flv" ".ogv" ".pls"))
-      "mplayer" "-slave" "-quiet" "-really-quiet" "-fullscreen")))
-  (require 'emms-playing-time)
+        (regexp-opt '(".ogg" ".mp3" ".wav" ".mpg" ".mpeg" ".wmv" ".wma"
+                      ".mov" ".avi" ".divx" ".ogm" ".asf" ".mkv" ".rm" ".rmvb"
+                      ".mp4" ".flac" ".vob" ".m4a" ".flv" ".ogv" ".pls"
+                      "http://" "mms://"))
+        "mplayer" "-slave" "-quiet" "-really-quiet" "-fullscreen")
+
+      ;; FIXME: configure VLC for Video
+      ;; (define-emms-simple-player vlc '(file url)
+      ;; (regexp-opt '(".wmv" ".mov" ".avi" ".rm" ".rmvb" ".mp4"))
+      ;; "vlc" "--fullscreen" "--intf=rc" "-I win")
+      (require 'emms-playing-time))
+    :bind
+    (("C-c m x" . emms-start)
+     ("C-c m q" . emms-stop)
+     ("C-c m p" . emms-pause)
+     ("C-c m P" . emms-previous)
+     ("C-c m n" . emms-next)
+     ;; FIXME: howto change volume under windows? no amixer.
+     ("C-c m +" . emms-volume-raise)
+     ("C-c m =" . emms-volume-raise)
+     ("C-c m -" . emms-volume-lower)
+     ("C-c m _" . emms-volume-lower)
+     ("C-c m f" . emms-play-file)
+     ("C-c m d" . emms-play-directory))
+    )
 #+END_SRC
 * Browser
 #+BEGIN_SRC emacs-lisp
