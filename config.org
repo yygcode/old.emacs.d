@@ -25,6 +25,8 @@
   (unless (string-equal system-type "windows-nt")
     (add-to-list 'exec-path "/usr/local/bin")
     (add-to-list 'exec-path "/usr/local/sbin"))
+  ;; FIXME: pdf-tools how to work windows version ?
+  ;; (setenv "PATH" (concat "F:\\msys64\\mingw64\\bin;" (getenv "PATH")))
 #+END_SRC
 ** coding system
 - See [[https://www.gnu.org/software/emacs/manual/html_node/emacs/International.html#International][Manual International]] and [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Non_002dASCII-Characters.html#Non_002dASCII-Characters][Non-ASCII Characters]] for more details
