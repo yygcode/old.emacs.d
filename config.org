@@ -26,7 +26,12 @@
     (add-to-list 'exec-path "/usr/local/bin")
     (add-to-list 'exec-path "/usr/local/sbin"))
   ;; FIXME: pdf-tools how to work windows version ?
-  ;; (setenv "PATH" (concat "F:\\msys64\\mingw64\\bin;" (getenv "PATH")))
+  (when (string-equal system-type "windows-nt")
+    (progn
+      (setenv "PATH" (concat "F:\\msys64\\usr\\bin;F:\\msys64\\mingw64\\bin;" (getenv "PATH")))
+      (add-to-list 'exec-path "f:/msys64/usr/bin")
+      (add-to-list 'exec-path "f:/msys64/mingw64/bin")
+      (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))))
 #+END_SRC
 ** coding system
 - See [[https://www.gnu.org/software/emacs/manual/html_node/emacs/International.html#International][Manual International]] and [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Non_002dASCII-Characters.html#Non_002dASCII-Characters][Non-ASCII Characters]] for more details
@@ -38,6 +43,12 @@
   (prefer-coding-system 'utf-8-unix)
   (when (string-equal current-language-environment "Chinese-GBK")
     (setq default-process-coding-system '(utf-8-unix . chinese-gbk-dos)))
+#+END_SRC
+** proxy
+#+BEGIN_SRC emacs-lisp
+  (setq url-proxy-services '(("http" . "127.0.0.1:49529")
+                             ("https" . "127.0.0.1:49529")
+                             ("no_porxy" . "^\\(localhost\\|10.*\\)")))
 #+END_SRC
 ** ui
 - disable startup screen
@@ -1155,6 +1166,12 @@ empty-defun-braces))
 #+BEGIN_SRC emacs-lisp
   (add-to-list 'exec-path "c:/mplayer")
   (add-to-list 'exec-path "c:/Program Files (x86)/VideoLAN/VLC/")
+
+  (defun y:emms-play-default()
+      (interactive)
+      (emms-play-directory "f:/CloudMusic")
+      (emms-start))
+
   (use-package emms
     :ensure emms
     :config
@@ -1180,7 +1197,8 @@ empty-defun-braces))
       ;; "vlc" "--fullscreen" "--intf=rc" "-I win")
       (require 'emms-playing-time))
     :bind
-    (("C-c m x" . emms-start)
+    (("C-c m x" . y:emms-play-default)
+     ("C-c m s" . emms-start)
      ("C-c m q" . emms-stop)
      ("C-c m p" . emms-pause)
      ("C-c m P" . emms-previous)
@@ -1197,22 +1215,35 @@ empty-defun-braces))
 * Browser
 #+BEGIN_SRC emacs-lisp
   (use-package w3m
-    :pin melpa)
-
-
-  ;;(defun w3m-play-movie ()
-  ;;  (interactive)
-  ;;  (let ((url (w3m-anchor)))
-  ;;    (cond ((string-match "^http:\\/\\/www\\.youtube\\.com" url)
-  ;;           (message (concat "loading from youtube... " url))
-  ;;           (call-process "mpv" nil nil nil url))
-  ;;          ((string-match "^http:\\/\\/www\\.bilibili\\.com" url)
-  ;;           (message (concat "loading from bilibili..." url))
-  ;;           (call-process "bili" nil nil nil url)))))
-
-  ;;(setq url-proxy-services '(("no_proxy" . "work\\.com")
-  ;;                           ("http" . "127.0.0.1:56207")
-  ;;                           ("https" . "127.0.0.1:56207")))
+    :pin melpa
+    :config
+    (progn
+      (setq w3m-coding-system 'utf-8
+            w3m-file-coding-system 'utf-8
+            w3m-file-name-coding-system 'utf-8
+            w3m-input-coding-system 'utf-8
+            w3m-output-coding-system 'utf-8
+            ;; emacs-w3m will test the ImageMagick support for png32
+            ;; and create files named "png32:-" everywhere
+            w3m-imagick-convert-program nil
+            w3m-terminal-coding-system 'utf-8
+            w3m-use-cookies t
+            w3m-cookie-accept-bad-cookies t
+            w3m-home-page "http://www.google.com.hk/en"
+            w3m-command-arguments       '("-F" "-cookie")
+            w3m-mailto-url-function     'compose-mail
+            browse-url-browser-function 'w3m
+            ;; use shr to view html mail, but if libxml NOT available
+            ;; use w3m isntead. That's macs 24.3+ default logic
+            mm-text-html-renderer 'w3m ; I prefer w3m
+            w3m-use-toolbar t
+            ;; show images in the browser
+            setq w3m-default-display-inline-images t
+            ;; w3m-use-tab     nil
+            w3m-confirm-leaving-secure-page nil
+            w3m-search-default-engine "g"
+            w3m-view-this-url-new-session-in-background t
+            w3m-key-binding 'info)))
 
   (defun y:view-mode-func()
     (message "Set to view mode func")
