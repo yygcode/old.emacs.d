@@ -12,12 +12,16 @@
 本文用[[http://orgmode.org/][Org mode]]文学编程特性定制[[https://www.gnu.org/software/emacs/][GNU Emacs]], 重点考虑程序员和软件项目管理者的文本
 编辑特点, 目标是提高工作效率和舒适度.
 
-2017使用Emacs版本是GNU Emacs 26.0.50, 此配置未在其他版本下测试. 通过github提供
-配置下载:
+2017使用Emacs版本是GNU Emacs 26.0.90(GNU Emacs 26.0.90 (build 3, x86_64-w64-mingw32) of 2017-10-14).
+此配置未在其他版本下测试. 通过github提供配置下载:
 #+BEGIN_SRC shell
 ~$ cd $HOME
 ~$ git clone https://github.com/yygcode/.emacs.d.git
 #+END_SRC
+
+* Environment
+** Windows
+- Windows环境需要配置工作目录和环境变量.
 
 * Basic
 ** environment
@@ -28,7 +32,7 @@
   ;; FIXME: pdf-tools how to work windows version ?
   (when (string-equal system-type "windows-nt")
     (progn
-      (setenv "PATH" (concat "F:\\msys64\\usr\\bin;F:\\msys64\\mingw64\\bin;" (getenv "PATH")))
+      ;;(setenv "PATH" (concat "F:\\msys64\\usr\\bin;F:\\msys64\\mingw64\\bin;" (getenv "PATH")))
       (add-to-list 'exec-path "f:/msys64/usr/bin")
       (add-to-list 'exec-path "f:/msys64/mingw64/bin")
       (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))))
@@ -326,6 +330,7 @@ FIXME: who require abbrev ? analyse delayed, diminish it now
 ** basic
 #+BEGIN_SRC emacs-lisp
   (use-package org
+    :diminish org
     :init
     (progn
       (setq org-support-shift-select t)
@@ -336,7 +341,8 @@ FIXME: who require abbrev ? analyse delayed, diminish it now
       (setq org-agenda-files (list org-directory
                                    (concat org-directory "/i")
                                    (concat org-directory "/p")))
-      (setq org-default-notes-file (concat org-directory "/notes.org")))
+      (setq org-default-notes-file (concat org-directory "/notes.org"))
+      (setq system-time-locale "C"))
     :bind
     (("C-c c" . org-capture)
      ("C-c a" . org-agenda))
