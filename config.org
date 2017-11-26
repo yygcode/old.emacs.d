@@ -1,6 +1,6 @@
 #+TITLE: Emacs configuration
-
-#+STARTUP: overview
+#+AUTHOR: yanyg
+#+EMAIL: yygcode@gmail.com
 
 * Introduction
 [[https://en.wikipedia.org/wiki/Emacs][Emacs]]/ˈiːmæks/ 是有着可扩展性的一系列编辑器. [[https://www.gnu.org/software/emacs/][GNU Emacs]]是最流行和可移植的[[https://en.wikipedia.org/wiki/Emacs][Emacs]]
@@ -21,23 +21,31 @@
 
 * Environment
 ** Windows
-- Windows环境需要配置工作目录和环境变量.
+- Windows环境需要配置工作目录和环境变量. 主要是\(PATH, HOME\).
+- 参考[[http://ycode.org/software.html#emacs][Emacs安装配置]], 定制自己习惯的工作目录, mingw环境和快捷键.
+- 我的环境配置: =HOME=e:, PATH=f:/msys64/usr/bin;f:/msys64/mingw64/bin;%PATH%=
+- 检测环境, 如果异常抛出提示/告警日志
+#+BEGIN_SRC emacs-lisp
+  (when (string-equal system-type "windows-nt")
+    (progn
+      (message "FIXME: check mingw exists")
+      ))
+#+END_SRC
 
-* Basic
-** environment
+** Linux
 #+BEGIN_SRC emacs-lisp
   (unless (string-equal system-type "windows-nt")
     (add-to-list 'exec-path "/usr/local/bin")
     (add-to-list 'exec-path "/usr/local/sbin"))
-  ;; FIXME: pdf-tools how to work windows version ?
-  (when (string-equal system-type "windows-nt")
-    (progn
-      ;;(setenv "PATH" (concat "F:\\msys64\\usr\\bin;F:\\msys64\\mingw64\\bin;" (getenv "PATH")))
-      (add-to-list 'exec-path "f:/msys64/usr/bin")
-      (add-to-list 'exec-path "f:/msys64/mingw64/bin")
-      (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))))
 #+END_SRC
-** coding system
+
+** All platforms
+#+BEGIN_SRC emacs-lisp
+  (unless (getenv "HOME")
+    (message "Maybe you forget to set env-variable HOME?"))
+#+END_SRC
+
+* Coding system
 - See [[https://www.gnu.org/software/emacs/manual/html_node/emacs/International.html#International][Manual International]] and [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Non_002dASCII-Characters.html#Non_002dASCII-Characters][Non-ASCII Characters]] for more details
 - Reset *default-process-coding-system* to local coding system for subprocess
   will parse failed. (e.g.: emms + mplayer)
@@ -48,12 +56,17 @@
   (when (string-equal current-language-environment "Chinese-GBK")
     (setq default-process-coding-system '(utf-8-unix . chinese-gbk-dos)))
 #+END_SRC
-** proxy
+
+* Net Proxy
+- I use lantern to reach googles/youtube.
+- You can use Access_proxy to customize the variable.
 #+BEGIN_SRC emacs-lisp
   (setq url-proxy-services '(("http" . "127.0.0.1:49529")
                              ("https" . "127.0.0.1:49529")
-                             ("no_porxy" . "^\\(localhost\\|10.*\\)")))
+                             ("no_porxy" . "^\\(localhost\\|10.*\\|*.github.com\\|*.gitlab.com\\|*.baidu.com\\|*bing.com\\)")))
 #+END_SRC
+
+* Basic
 ** ui
 - disable startup screen
 - customize scratch message
