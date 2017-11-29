@@ -435,7 +435,7 @@ FIXME: who require abbrev ? analyse delayed, diminish it now
       (setq org-export-with-email t)
       (setq org-export-with-toc t)
       (setq org-export-with-section-numbers 't)
-      (setq org-html-preamble 't)
+      (setq org-html-preamble nil)
       (setq org-html-postamble nil)
       (setq org-html-link-home "https://ycode.org")
       (when (file-exists-p "~/hp/css/site.css")
