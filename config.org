@@ -404,6 +404,10 @@ FIXME: who require abbrev ? analyse delayed, diminish it now
    (add-hook 'org-mode-hook 'org-set-fontset-set)
 #+END_SRC
 
+** html
+#+BEGIN_SRC emacs-lisp
+  (use-package htmlize)
+#+END_SRC
 ** blogs
 #+BEGIN_SRC emacs-lisp
   (defun y:org-publish-setup()
