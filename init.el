@@ -13,9 +13,12 @@
 
 ;; Emacs archives site is isolated by GFW, use mirror site
 ;; (setq package-archives
-;;       '(("gnu" . "https://elpa.gnu.org/packages/")
-;;         ("marmalade" . "https://marmalade-repo.org/packages/")
-;;         ("melpa" . "https://melpa.org/packages/")))
+;;       '(("melpa-stable" . "https://stable.melpa.org/packages/")
+;;         ("melpa" . "https://melpa.org/packages/")
+;;         ("gnu" . "https://elpa.gnu.org/packages/")
+;; 	("org" . "http://orgmode.org/elpa/")
+;;         ;;("marmalade" . "https://marmalade-repo.org/packages/")
+;; 	))
 ;; (setq package-archives
 ;;       '(("gnu" . "https://elpa.gnu.org/packages/")
 ;;         ("marmalade" . "https://marmalade-repo.org/packages/")
@@ -26,8 +29,8 @@
 ;;        ("melpa" . "http://elpa.emacs-china.org/melpa/")))
 (setq package-archives
       '(("gnu"   . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
+        ("org"   . "http://mirrors.tuna.tsinghua.edu.cn/elpa/org/")
         ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
-	("org"   . "http://mirrors.tuna.tsinghua.edu.cn/elpa/org/")
         ("melpa-stable" .
 	           "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa-stable/")))
 (package-initialize)

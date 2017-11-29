@@ -61,9 +61,9 @@
 - I use lantern to reach googles/youtube.
 - You can use Access_proxy to customize the variable.
 #+BEGIN_SRC emacs-lisp
-  (setq url-proxy-services '(("http" . "127.0.0.1:49529")
-                             ("https" . "127.0.0.1:49529")
-                             ("no_porxy" . "^\\(localhost\\|10.*\\|*.github.com\\|*.gitlab.com\\|*.baidu.com\\|*bing.com\\)")))
+;;  (setq url-proxy-services '(("http" . "127.0.0.1:49529")
+;;                             ("https" . "127.0.0.1:49529")
+;;                             ("no_porxy" . "^\\(localhost\\|10.*\\|*.github.com\\|*.gitlab.com\\|*.baidu.com\\|*bing.com\\)")))
 #+END_SRC
 
 * Basic
@@ -410,69 +410,86 @@ FIXME: who require abbrev ? analyse delayed, diminish it now
 #+END_SRC
 ** blogs
 #+BEGIN_SRC emacs-lisp
-  (defun y:org-publish-setup()
-    "Org publish setup"
-    ;; http://orgmode.org/manual/Publishing-options.html
-    (setq org-export-with-sub-superscripts nil)
-    (setq org-export-with-timestamps nil)
-    (setq org-export-author nil)
-    (setq org-export-with-creator nil)
-    (setq org-export-with-date nil)
-    (setq org-export-with-email nil)
-    (setq org-export-with-toc 't)
-    (setq org-export-with-section-numbers 't)
-    (setq org-html-preamble nil)
-    (setq org-html-postamble nil)
-    (when (file-exists-p "~/hp/css/site.css")
-      (setq org-html-head
-            (concat
-             "<style type=\"text/css\">"
-             (with-temp-buffer
-               (insert-file "~/hp/css/site.css")
-               (buffer-string))
-             "</style>")))
-    ;; see org-html-style-default
-    (setq org-html-head-include-default-style nil)
+    (defun y:org-publish-setup()
+      "Org publish setup"
+      ;; http://orgmode.org/manual/Publishing-options.html
+      (setq org-export-with-sub-superscripts nil)
+      (setq org-export-with-timestamps nil)
+      (setq org-export-author "yanyg")
+      (setq org-export-with-creator nil)
+      (setq org-export-with-date nil)
+      (setq org-export-with-email t)
+      (setq org-export-with-toc t)
+      (setq org-export-with-section-numbers 't)
+      (setq org-html-preamble nil)
+      (setq org-html-postamble nil)
+      (setq org-html-link-home "https://ycode.org")
+      (when (file-exists-p "~/hp/css/site.css")
+        (setq org-html-head
+              (concat
+               "<style type=\"text/css\">"
+               (with-temp-buffer
+                 (insert-file "~/hp/css/site.css")
+                 (buffer-string))
+               "</style>")))
+      ;; see org-html-style-default
+      (setq org-html-head-include-default-style nil)
 
-    ;; see org-html-scripts
-    (setq org-html-head-include-scripts nil)
-    (setq org-html-htmlize-output-type 'css)
+      ;; see org-html-scripts
+      ;; (setq org-html-head-include-scripts nil)
+      (setq org-html-htmlize-output-type 'css)
 
-    ;; http://orgmode.org/worg/org-tutorials/org-publish-html-tutorial.html
-    (setq org-publish-project-alist
-          '(("pages"
-             :base-directory "~/hp/src/"
-             :publishing-directory "~/hp/"
-             :recursive nil
-             :with-author t
-             :with-date t
-             :with-email t
-             :html-head-include-default-style nil
-             :html-head "<link rel=\"shortcut icon\" href=\"http://ycode.org/css/favicon.ico\" />
-  <link rel=\"stylesheet\" type=\"text/css\" href=\"css/site.css\" />"
-             :publishing-function org-html-publish-to-html
-             ;; :auto-sitemap 't
-             ;; :sitemap-filename "sitemap.org"
-             ;; :sitemap-title "Sitemap"
-             :with-toc 't)
-            ("blog"
-             :base-directory "~/hp/src/blogs/"
-             :publishing-directory "~/hp/blogs/"
-             :recursive nil
-             :html-head-include-default-style nil
-             :html-head "<link rel=\"shortcut icon\" href=\"http://ycode.org/css/favicon.ico\" />
-  <link rel=\"stylesheet\" type=\"text/css\" href=\"../css/site.css\" />"
-             :publishing-function org-html-publish-to-html
-             :section-numbers 't
-             :with-toc 't)
-            ("site" :components ("pages" "blog"))))
-    )
+      ;;
+      (setq org-html-preamble-format '(("en" "<table border=\"2\" cellspacing=\"0\" cellpadding=\"6\" rules=\"groups\" frame=\"hsides\">
+<colgroup>
+<col  class=\"org-left\" />
+<col  class=\"org-left\" />
+<col  class=\"org-left\" />
+<col  class=\"org-left\" />
+<col  class=\"org-left\" />
+</colgroup>
 
-  (use-package ox-publish
-    :pin org
-    :ensure org-plus-contrib
-    :init
-    (y:org-publish-setup))
+<tbody><tr>
+<td class=\"org-left\"><a href=\"index.html\">Home</a></td>
+<td class=\"org-left\"><a href=\"https://github.com/yygcode\">Github</a></td>
+</tr></tbody></table>"))
+  )
+
+      ;; http://orgmode.org/worg/org-tutorials/org-publish-html-tutorial.html
+      (setq org-publish-project-alist
+            '(("pages"
+               :base-directory "~/hp/src/"
+               :publishing-directory "~/hp/"
+               :recursive nil
+               :with-author t
+               :with-date t
+               :with-email t
+               :html-head-include-default-style nil
+               :html-head "<link rel=\"shortcut icon\" href=\"http://ycode.org/css/favicon.ico\" />
+    <link rel=\"stylesheet\" type=\"text/css\" href=\"css/site.css\" />"
+               :publishing-function org-html-publish-to-html
+               ;; :auto-sitemap 't
+               ;; :sitemap-filename "sitemap.org"
+               ;; :sitemap-title "Sitemap"
+               :with-toc 't)
+              ("blog"
+               :base-directory "~/hp/src/blogs/"
+               :publishing-directory "~/hp/blogs/"
+               :recursive nil
+               :html-head-include-default-style nil
+               :html-head "<link rel=\"shortcut icon\" href=\"http://ycode.org/css/favicon.ico\" />
+    <link rel=\"stylesheet\" type=\"text/css\" href=\"../css/site.css\" />"
+               :publishing-function org-html-publish-to-html
+               :section-numbers 't
+               :with-toc 't)
+              ("site" :components ("pages" "blog"))))
+      )
+
+    (use-package ox-publish
+      :pin org
+      :ensure org-plus-contrib
+      :init
+      (y:org-publish-setup))
 #+END_SRC
 ** remove additional spaces for CN
 #+BEGIN_SRC emacs-lisp
@@ -501,6 +518,16 @@ FIXME: who require abbrev ? analyse delayed, diminish it now
   ;;     (ad-set-arg 1 fixed-contents)))
   ;; (advice-add 'org-html-paragraph :before #'org-html-paragraph--remove-mb-linefeed-space)
 #+END_SRC
+** screenshot
+   :PROPERTIES:
+   :ID:       653a0c35-ebe2-4a5a-bdc6-13d7f541aca2
+   :END:
+- Github: [[https://github.com/dfeich/org-screenshot]]
+#+BEGIN_SRC emacs-lisp
+  (use-package org-attach-screenshot
+    :pin melpa)
+#+END_SRC
+[[file:data/65/3a0c35-ebe2-4a5a-bdc6-13d7f541aca2/screenshot-20171129-195954.png]]
 * efficiency and enhancements
 ** helm
 #+BEGIN_SRC emacs-lisp
