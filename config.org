@@ -19,6 +19,25 @@
 ~$ git clone https://github.com/yygcode/.emacs.d.git
 #+END_SRC
 
+* Help routes
+** insert before line
+#+BEGIN_SRC emacs-lisp
+  (defun insert-before-line ()
+    (interactive)
+    (let ((pos (point))
+          (cur-max (point-max)))
+      (beginning-of-line)
+      ; I've changed the order of (yank) and (indent-according-to-mode)
+      ; in order to handle the case when yanked line comes with its own indent
+      (yank)(indent-according-to-mode)
+      ; could be as well changed to simple (newline) it's metter of taste
+      ; and of usage
+      (newline-and-indent) 
+      (goto-char (+ pos (- (point-max) cur-max)))))
+  (global-set-key (kbd "C-i") 'y:insert-before-line)
+#+END_SRC
+
+
 * Environment
 ** Windows
 - Windows环境需要配置工作目录和环境变量. 主要是\(PATH, HOME\).
@@ -133,76 +152,76 @@
 
 ** line number
 #+BEGIN_SRC emacs-lisp
-  (global-linum-mode t)
+  ;;  (global-linum-mode t)
 
-  ;; linum for terminal
-  ;;(unless (display-graphic-p)
-  (add-hook 'linum-before-numbering-hook
-            (lambda ()
-              (setq-local linum-format-fmt
-                          (let ((w (length
-                                    (number-to-string
-                                     (count-lines (point-min) (point-max))))))
-                            (concat "%" (number-to-string w) "d")))))
+    ;; linum for terminal
+    ;;(unless (display-graphic-p)
+    ;; (add-hook 'linum-before-numbering-hook
+    ;;           (lambda ()
+    ;;             (setq-local linum-format-fmt
+    ;;                         (let ((w (length
+    ;;                                   (number-to-string
+    ;;                                    (count-lines (point-min) (point-max))))))
+    ;;                           (concat "%" (number-to-string w) "d")))))
 
-  (setq linum-format
-        (lambda(line) (concat
-                       (propertize (format linum-format-fmt line) 'face 'linum)
-                       (propertize "|" 'face 'homoglyph);;'font-lock-keyword-face)
-                       )));;)
+    ;; (setq linum-format
+    ;;       (lambda(line) (concat
+    ;;                      (propertize (format linum-format-fmt line) 'face 'linum)
+    ;;                      (propertize "|" 'face 'homoglyph);;'font-lock-keyword-face)
+    ;;                      )));;)
 
-  (setq linum-format
-        (lambda(line) (concat
-                       (propertize (format linum-format-fmt line) 'face 'linum)
-                       (propertize "|" 'font-lock-faces '(:foreground "cyan"));;'font-lock-keyword-face)
-                       )));;)
+    ;; (setq linum-format
+    ;;       (lambda(line) (concat
+    ;;                      (propertize (format linum-format-fmt line) 'face 'linum)
+    ;;                      (propertize "|" 'font-lock-faces '(:foreground "cyan"));;'font-lock-keyword-face)
+    ;;                      )));;)
 
-  (setq linum-mode-inhibit-modes-list
-        '(eshell-mode
-          shell-mode
-          profiler-report-mode
-          ffip-diff-mode
-          dictionary-mode
-          erc-mode
-          browse-kill-ring-mode
-          etags-select-mode
-          dired-mode
-          help-mode
-          text-mode
-          fundamental-mode
-          jabber-roster-mode
-          jabber-chat-mode
-          inferior-js-mode
-          inferior-python-mode
-          inferior-scheme-mode
-          twittering-mode
-          compilation-mode
-          weibo-timeline-mode
-          woman-mode
-          Info-mode
-          calc-mode
-          calc-trail-mode
-          comint-mode
-          gnus-group-mode
-          inf-ruby-mode
-          gud-mode
-          org-mode
-          vc-git-log-edit-mode
-          log-edit-mode
-          term-mode
-          w3m-mode
-          speedbar-mode
-          gnus-summary-mode
-          gnus-article-mode
-          calendar-mode))
+    ;; (setq linum-mode-inhibit-modes-list
+    ;;       '(eshell-mode
+    ;;         shell-mode
+    ;;         profiler-report-mode
+    ;;         ffip-diff-mode
+    ;;         dictionary-mode
+    ;;         erc-mode
+    ;;         browse-kill-ring-mode
+    ;;         etags-select-mode
+    ;;         dired-mode
+    ;;         help-mode
+    ;;         text-mode
+    ;;         fundamental-mode
+    ;;         jabber-roster-mode
+    ;;         jabber-chat-mode
+    ;;         inferior-js-mode
+    ;;         inferior-python-mode
+    ;;         inferior-scheme-mode
+    ;;         twittering-mode
+    ;;         compilation-mode
+    ;;         weibo-timeline-mode
+    ;;         woman-mode
+    ;;         Info-mode
+    ;;         calc-mode
+    ;;         calc-trail-mode
+    ;;         comint-mode
+    ;;         gnus-group-mode
+    ;;         inf-ruby-mode
+    ;;         gud-mode
+    ;;         org-mode
+    ;;         vc-git-log-edit-mode
+    ;;         log-edit-mode
+    ;;         term-mode
+    ;;         w3m-mode
+    ;;         speedbar-mode
+    ;;         gnus-summary-mode
+    ;;         gnus-article-mode
+    ;;         calendar-mode))
 
-  (defun linum-on-around(orig-func &rest args)
-    "Stop linum-mode for linum-inhibit modes"
-    (unless (member major-mode linum-mode-inhibit-modes-list)
-      (apply orig-func args)
-      )
-    )
-  (advice-add 'linum-on :around #'linum-on-around)
+    ;; (defun linum-on-around(orig-func &rest args)
+    ;;   "Stop linum-mode for linum-inhibit modes"
+    ;;   (unless (member major-mode linum-mode-inhibit-modes-list)
+    ;;     (apply orig-func args)
+    ;;     )
+    ;;   )
+    ;; (advice-add 'linum-on :around #'linum-on-around)
 
 #+END_SRC
 ** font
