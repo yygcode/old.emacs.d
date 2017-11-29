@@ -22,18 +22,13 @@
 * Help routes
 ** insert before line
 #+BEGIN_SRC emacs-lisp
-  (defun insert-before-line ()
-    (interactive)
-    (let ((pos (point))
-          (cur-max (point-max)))
-      (beginning-of-line)
-      ; I've changed the order of (yank) and (indent-according-to-mode)
-      ; in order to handle the case when yanked line comes with its own indent
-      (yank)(indent-according-to-mode)
-      ; could be as well changed to simple (newline) it's metter of taste
-      ; and of usage
-      (newline-and-indent) 
-      (goto-char (+ pos (- (point-max) cur-max)))))
+(defun insert-line-above ()
+  "Insert an empty line above the current line."
+  (interactive)
+  (save-excursion
+    (end-of-line 0)
+    (open-line 1)))
+
   (global-set-key (kbd "C-i") 'y:insert-before-line)
 #+END_SRC
 
@@ -440,7 +435,7 @@ FIXME: who require abbrev ? analyse delayed, diminish it now
       (setq org-export-with-email t)
       (setq org-export-with-toc t)
       (setq org-export-with-section-numbers 't)
-      (setq org-html-preamble nil)
+      (setq org-html-preamble 't)
       (setq org-html-postamble nil)
       (setq org-html-link-home "https://ycode.org")
       (when (file-exists-p "~/hp/css/site.css")
