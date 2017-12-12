@@ -3,84 +3,83 @@
 #+EMAIL: yygcode@gmail.com
 
 * Introduction
-[[https://en.wikipedia.org/wiki/Emacs][Emacs]]/ˈiːmæks/ 是有着可扩展性的一系列编辑器. [[https://www.gnu.org/software/emacs/][GNU Emacs]]是最流行和可移植的[[https://en.wikipedia.org/wiki/Emacs][Emacs]]
-实现.
+*[[https://en.wikipedia.org/wiki/Emacs][Emacs]]* /ˈiːmæks/ is a family of text editors that are characterized by their
+extensibility. [[https://www.gnu.org/software/emacs/][GNU Emacs]] is the most popular and portable emacs implementation.
 
-[[http://orgmode.org/][Org mode]]是Emacs的一种mode, 被广泛的用以记录日志, 维护TODO清单, 项目计划. 同时
-也用作文学编程(literate programming)和可重复性研究(reproducible research).
+*[[http://orgmode.org/][Org mode]]* is a [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Major-Modes.html][major mode]] of emacs. It is for keeping notes, capturing ideas,
+maintaining TODO lists, planning projects, and authoring documents with a fast
+and effective plain-text system. It's also for rich exporting, html publishing,
+literal programming, and reproducible research, etc..
 
-本文用[[http://orgmode.org/][Org mode]]文学编程特性定制[[https://www.gnu.org/software/emacs/][GNU Emacs]], 重点考虑程序员和软件项目管理者的文本
-编辑特点, 目标是提高工作效率和舒适度.
+This configuration is organzied with org mode literal programming, used to
+customize emacs deeply for engineers. The goal is to improve the productivity
+and comfort.
 
-2017使用Emacs版本是GNU Emacs 26.0.90(GNU Emacs 26.0.90 (build 3, x86_64-w64-mingw32) of 2017-10-14).
-此配置未在其他版本下测试. 通过github提供配置下载:
+This configuration is tested under GNU Emacs 26.0.90, the version details is:
+=GNU Emacs 26.0.90 (build 3, x86_64-w64-mingw32) of 2017-10-14=.
+
+You can download the configuration from GitHub freely:
 #+BEGIN_SRC shell
 ~$ cd $HOME
 ~$ git clone https://github.com/yygcode/.emacs.d.git
 #+END_SRC
 
-* Help routes
-** insert before line
-#+BEGIN_SRC emacs-lisp
-(defun insert-line-above ()
-  "Insert an empty line above the current line."
-  (interactive)
-  (save-excursion
-    (end-of-line 0)
-    (open-line 1)))
+See notes [[http://ycode.org/emacs.html]] for more details.
 
-  (global-set-key (kbd "C-i") 'y:insert-before-line)
-#+END_SRC
-
-
-* Environment
+* Environment check and specialize
 ** Windows
-- Windows环境需要配置工作目录和环境变量. 主要是\(PATH, HOME\).
-- 参考[[http://ycode.org/software.html#emacs][Emacs安装配置]], 定制自己习惯的工作目录, mingw环境和快捷键.
-- 我的环境配置: =HOME=e:, PATH=f:/msys64/usr/bin;f:/msys64/mingw64/bin;%PATH%=
-- 检测环境, 如果异常抛出提示/告警日志
+- Check environment variables, warn if misconfigured: =HOME, PATH=
+- Solve confliction between Emacs and Windows traditional key binds
+- ref [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Microsoft-Windows.html#Microsoft-Windows][Manual for MS Windows]] and [[http://ycode.org/emacs.html#install-ms][Install for MS]] for details
+- e.g.: =HOME=e:, PATH=f:/msys64/usr/bin;f:/msys64/mingw64/bin;%PATH%=
 #+BEGIN_SRC emacs-lisp
+  (defun y:w32-check-env()
+    (interactive)
+    (message "TODO: FIXME")
+    (unless (getenv "HOME")
+      (warn "w32: Please ensure set env 'HOME'"))
+    )
+
+  (defun y:w32-keybind()
+    (interactive)
+    ;; enable M-w for copy
+    (w32-register-hot-key [M-w])
+    ;;(setq w32-lwindow-modifier 'super)
+    ;;(w32-register-hot-key [s-])
+    ;;(w32-register-hot-key [A-tab])
+    ;;(setq w32-pass-lwindow-to-system nil)
+    (w32-register-hot-key [C-M-n]))
+
   (when (string-equal system-type "windows-nt")
     (progn
-      (message "FIXME: check mingw exists")
-      ))
+      (y:w32-check-env)
+      (y:w32-keybind)))
 #+END_SRC
 
 ** Linux
-#+BEGIN_SRC emacs-lisp
-  (unless (string-equal system-type "windows-nt")
-    (add-to-list 'exec-path "/usr/local/bin")
-    (add-to-list 'exec-path "/usr/local/sbin"))
-#+END_SRC
+*** TODO Wait.
 
-** All platforms
+** Common
+- Use C system-time
 #+BEGIN_SRC emacs-lisp
-  (unless (getenv "HOME")
-    (message "Maybe you forget to set env-variable HOME?"))
-#+END_SRC
-
-* Coding system
-- See [[https://www.gnu.org/software/emacs/manual/html_node/emacs/International.html#International][Manual International]] and [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Non_002dASCII-Characters.html#Non_002dASCII-Characters][Non-ASCII Characters]] for more details
-- Reset *default-process-coding-system* to local coding system for subprocess
-  will parse failed. (e.g.: emms + mplayer)
-#+BEGIN_SRC emacs-lisp
-  ;; Always want to use UTF-8, unix eol.
-  ;; But collaborations with subprocess require local coding system
-  (prefer-coding-system 'utf-8-unix)
-  (when (string-equal current-language-environment "Chinese-GBK")
-    (setq default-process-coding-system '(utf-8-unix . chinese-gbk-dos)))
+  (setq system-time-locale "C")
 #+END_SRC
 
 * Net Proxy
+- URIpackage
 - I use lantern to reach googles/youtube.
 - You can use Access_proxy to customize the variable.
+- Set by environments HTTP_PROXY, HTTPS_PROXY, NO_PROXY
+- ref to [[https://www.gnu.org/software/emacs/manual/html_mono/url.html][Manual URI]]
 #+BEGIN_SRC emacs-lisp
-;;  (setq url-proxy-services '(("http" . "127.0.0.1:49529")
-;;                             ("https" . "127.0.0.1:49529")
-;;                             ("no_porxy" . "^\\(localhost\\|10.*\\|*.github.com\\|*.gitlab.com\\|*.baidu.com\\|*bing.com\\)")))
+  (when (getenv "HTTP_PROXY")
+    (message "Proxy: http proxy is %s" (getenv "HTTP_PROXY")))
+  ;;  (setq url-proxy-services '(("http" . "127.0.0.1:49529")
+  ;;                             ("https" . "127.0.0.1:49529")
+  ;;                             ("no_porxy" . "^\\(localhost\\|10.*\\|*.github.com\\|*.gitlab.com\\|*.baidu.com\\|*bing.com\\)")))
 #+END_SRC
 
-* Basic
+* Apperance
 ** ui
 - disable startup screen
 - customize scratch message
@@ -88,15 +87,16 @@
 - hide tool, menu, scroll bar
 - disable ring
 - load comfortable theme monikai
-- show column
-
+- show column and size in the mode line
+- monokai-theme is beautiful and compatible for me
+- enhance mode line under terminal
 #+BEGIN_SRC emacs-lisp
   (setq-default
    ;; disable start screen
    inhibit-splash-screen t
    ;; customize scratch message
    initial-scratch-message (concat ";; Happy hacking "
-                                   (or user-login-name "")
+                                   (or user-login-name "<yanyg>")
                                    " - Emacs loves you!\n\n"))
 
   ;; init fullscreen
@@ -120,22 +120,26 @@
   (setq visible-bell nil)
   (setq ring-bell-function 'ignore)
 
+  ;; show column and size in the mode line
   (setq column-number-mode t)
-
   (column-number-mode t)
   (size-indication-mode t)
-#+END_SRC
 
-** colors
-- monokai-theme is beautiful and compatible
-- mode line under terminal need reconfig to enhance distinguish
-#+BEGIN_SRC emacs-lisp
+  ;; monokai theme
   (use-package monokai-theme
     :init
     (load-theme 'monokai t))
 
+  ;; enhance terminal mode-line color
   (unless (display-graphic-p)
     (set-face-background 'mode-line "color-240"))
+
+  ;; diminish
+  (use-package diminish
+    :config
+    (progn
+      (diminish 'abbrev-mode)
+      (diminish 'eldoc-mode)))
 #+END_SRC
 
 *** TODO more ui customize work
@@ -145,138 +149,34 @@
   [[https://www.emacswiki.org/emacs/ColumnMarker][ColumnMarker]]
   [[https://www.emacswiki.org/emacs/EightyColumnRule][EightyColumnRule]]
 
-** line number
-#+BEGIN_SRC emacs-lisp
-  ;;  (global-linum-mode t)
-
-    ;; linum for terminal
-    ;;(unless (display-graphic-p)
-    ;; (add-hook 'linum-before-numbering-hook
-    ;;           (lambda ()
-    ;;             (setq-local linum-format-fmt
-    ;;                         (let ((w (length
-    ;;                                   (number-to-string
-    ;;                                    (count-lines (point-min) (point-max))))))
-    ;;                           (concat "%" (number-to-string w) "d")))))
-
-    ;; (setq linum-format
-    ;;       (lambda(line) (concat
-    ;;                      (propertize (format linum-format-fmt line) 'face 'linum)
-    ;;                      (propertize "|" 'face 'homoglyph);;'font-lock-keyword-face)
-    ;;                      )));;)
-
-    ;; (setq linum-format
-    ;;       (lambda(line) (concat
-    ;;                      (propertize (format linum-format-fmt line) 'face 'linum)
-    ;;                      (propertize "|" 'font-lock-faces '(:foreground "cyan"));;'font-lock-keyword-face)
-    ;;                      )));;)
-
-    ;; (setq linum-mode-inhibit-modes-list
-    ;;       '(eshell-mode
-    ;;         shell-mode
-    ;;         profiler-report-mode
-    ;;         ffip-diff-mode
-    ;;         dictionary-mode
-    ;;         erc-mode
-    ;;         browse-kill-ring-mode
-    ;;         etags-select-mode
-    ;;         dired-mode
-    ;;         help-mode
-    ;;         text-mode
-    ;;         fundamental-mode
-    ;;         jabber-roster-mode
-    ;;         jabber-chat-mode
-    ;;         inferior-js-mode
-    ;;         inferior-python-mode
-    ;;         inferior-scheme-mode
-    ;;         twittering-mode
-    ;;         compilation-mode
-    ;;         weibo-timeline-mode
-    ;;         woman-mode
-    ;;         Info-mode
-    ;;         calc-mode
-    ;;         calc-trail-mode
-    ;;         comint-mode
-    ;;         gnus-group-mode
-    ;;         inf-ruby-mode
-    ;;         gud-mode
-    ;;         org-mode
-    ;;         vc-git-log-edit-mode
-    ;;         log-edit-mode
-    ;;         term-mode
-    ;;         w3m-mode
-    ;;         speedbar-mode
-    ;;         gnus-summary-mode
-    ;;         gnus-article-mode
-    ;;         calendar-mode))
-
-    ;; (defun linum-on-around(orig-func &rest args)
-    ;;   "Stop linum-mode for linum-inhibit modes"
-    ;;   (unless (member major-mode linum-mode-inhibit-modes-list)
-    ;;     (apply orig-func args)
-    ;;     )
-    ;;   )
-    ;; (advice-add 'linum-on :around #'linum-on-around)
-
-#+END_SRC
 ** font
-*** Default font set to Adobe Source Code Pro for english, YaHei for CJK.
+- Windows default to Lucida Sans
+- Set to Source Code Pro if available
+- Use YaHei Light or YaHei for CJK fonts
+  + If unset CJK fonts, Emacs runs very slow when the buffer has CJK characters
 #+BEGIN_SRC emacs-lisp
   ;; fallback fonts
   (set-fontset-font "fontset-default" nil 
-                    (font-spec :name "Lucida Sans" :size 15))
-   (when (find-font (font-spec :name "Source Code Pro" :size 15))
-     (set-frame-font (font-spec :name "Source Code Pro" :size 15) nil t)
-     (message "Setting font to Source Code Pro"))
+		    (font-spec :name "Lucida Sans" :size 15))
+  (when (find-font (font-spec :name "Source Code Pro" :size 15))
+    (set-frame-font (font-spec :name "Source Code Pro" :size 15) nil t)
+    (message "Setting font to Source Code Pro"))
 
-   ;; MS YaHei for CJK
-   (dolist (charset '(kana han symbol cjk-misc bopomofo))
-     (set-fontset-font nil charset
-                      (font-spec :family "Microsoft YaHei Light" :size 15)))
+  ;; MS YaHei for CJK
+  (dolist (charset '(kana han symbol cjk-misc bopomofo))
+    (set-fontset-font nil charset
+		      (font-spec :family "Microsoft YaHei" :size 15)))
 #+END_SRC
-** input method                                                :pyim:
-*** zh input method - pyim
-#+BEGIN_SRC emacs-lisp
-  ;; FIXME:
-  ;; use-package has a bug
-  ;; if exists prefix-[date] and prefix-other-words-[date]
-  ;; use-package can not require package properly
-  (use-package pyim)
-  (require 'pyim)
-  (use-package pyim
-    :init
-    (setq default-input-method "pyim")
-    :config
-    (progn
-      ;; use western punctuation (ban jiao)
-      (setq pyim-punctuation-dict nil)
-      ;; isearch with pinyin
-      (setq pyim-isearch-enable-pinyin-search t)
-      ;; backends, refer from chenbin
-      ;;(setq pyim-backends '(pinyin-shortcode
-      ;;                      pinyin-zhabc
-      ;;                      dcache-personal
-      ;;                      dcache-common
-      ;;                      pinyin-chars))
-      (setq pyim-page-length 5)
 
-      (setq pyim-use-tooltip 'popup)
-
-      ;; require use-package pyim-basedict is optional
-      (use-package pyim-basedict
-        :init
-        (pyim-basedict-enable))))
-
-  (add-to-list 'auto-mode-alist '("\\.pyim\\'" . text-mode))
-#+END_SRC
-** editing
+* Misc Behaviors
 - no backup files, managed files with repo
 - typed text replaces the selected region
 - large file warning threshold set to 100MB
 - default directory set to my work directory
 - disable mouse
 - highlights operation portions
-
+- alias yes-no to y-n
+- desktop for linux
 #+BEGIN_SRC emacs-lisp
   (setq-default make-backup-files nil)
 
@@ -289,19 +189,27 @@
    kill-ring-max 500
    kill-whole-line t)
 
+  (defalias 'yes-or-no-p 'y-or-n-p)
+
   ;; unit is bytes
   (setq large-file-warning-threshold 100000000)
-  (setq default-directory "~/work/")
+  (setq default-directory "~/")
 
   (use-package disable-mouse
     :init(global-disable-mouse-mode)
     :diminish global-disable-mouse-mode)
 
-  (use-package volatile-highlights
-    :pin melpa
-    :diminish volatile-highlights-mode
-    :init
-    (volatile-highlights-mode t))
+  ;; windows too slow to open history files
+  (when (string-equal system-type "gnu/linux")
+    (desktop-save-mode 1))
+
+  (setq confirm-kill-processes nil)
+
+  ;; (use-package volatile-highlights
+  ;;   :pin melpa
+  ;;   :diminish volatile-highlights-mode
+  ;;   :init
+  ;;   (volatile-highlights-mode t))
 #+END_SRC
 
 - undo-tree
@@ -316,45 +224,42 @@
     (global-undo-tree-mode))
 #+END_SRC
 
-** alias
+* Coding system
+- See [[https://www.gnu.org/software/emacs/manual/html_node/emacs/International.html#International][Manual International]] and [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Non_002dASCII-Characters.html#Non_002dASCII-Characters][Non-ASCII Characters]] for more details
+- Reset *default-process-coding-system* to local coding system for subprocess
+  will parse failed. (e.g.: emms + mplayer)
 #+BEGIN_SRC emacs-lisp
-(defalias 'yes-or-no-p 'y-or-n-p)
+  ;; Always want to use UTF-8, unix eol.
+  ;; But collaborations with subprocess require local coding system
+  (prefer-coding-system 'utf-8-unix)
+  (when (string-equal current-language-environment "Chinese-GBK")
+    ;; Do not use utf-8-unix . chinese-gbk-dos for
+    ;; the set will cause ggtags failure
+    (setq default-process-coding-system '(utf-8 . chinese-gbk)))
 #+END_SRC
 
-** utility lisp code
-*** quckly open config.org with C-c q 1
+* Helper routes
+** quickly open files
 #+BEGIN_SRC emacs-lisp
-  (defun y/open-file-config()
+  (defun y:open-file-config()
     (interactive)
     (find-file "~/.emacs.d/config.org"))
-  (global-set-key (kbd "C-c q c") 'y/open-file-config)
+  (global-set-key (kbd "C-c q c") 'y:open-file-config)
 
-  (defun y/open-file-imeeting()
+  (defun y:open-file-imeeting()
     (interactive)
-    (find-file "~/work/org/imeeting.org"))
-  (global-set-key (kbd "C-c q i") 'y/open-file-imeeting)
+    (find-file "~/org/i/meeting.org"))
+  (global-set-key (kbd "C-c q i") 'y:open-file-imeeting)
+
+  (defun y:open-file-favorite-sites()
+    (interactive)
+    (find-file "~/org/h/favorite-sites.org"))
+  (global-set-key (kbd "C-c q w") 'y:open-file-favorite-sites)
 #+END_SRC
 
-** abbrev
-FIXME: who require abbrev ? analyse delayed, diminish it now
-#+BEGIN_SRC emacs-lisp
-  (defun y:abbrev-mode-diminish()
-    (diminish abbrev-mode))
-  (eval-after-load nil 'y:abbrev-mode-diminish)
-#+END_SRC
-** session
-#+BEGIN_SRC emacs-lisp
-  ;; windows too slow to open history files
-  (when (string-equal system-type "gnu/linux")
-    (desktop-save-mode 1))
-#+END_SRC
-** exit
-- Ignore kill process confirmation when Emacs exit
-#+BEGIN_SRC emacs-lisp
-  (setq confirm-kill-processes nil)
-#+END_SRC
-* Org                                                        :agenda:capture:
-** basic
+* Org Mode
+** Default behaviors, Directory and Key binding
+- Homepage: [[http://orgmode.org/]]
 #+BEGIN_SRC emacs-lisp
   (use-package org
     :diminish org
@@ -371,277 +276,155 @@ FIXME: who require abbrev ? analyse delayed, diminish it now
       (setq org-default-notes-file (concat org-directory "/notes.org"))
       (setq system-time-locale "C"))
     :bind
-    (("C-c c" . org-capture)
-     ("C-c a" . org-agenda))
+    (("C-c o c" . org-capture)
+     ("C-c o a" . org-agenda))
     :mode
     ("\\.org\\'" . org-mode))
 #+END_SRC
-** bullets
-- Home page: [[https://github.com/sabof/org-bullets][github]]
+
+** Bullets
+- Homepage: [[https://github.com/sabof/org-bullets][GitHub Org Bullets]]
 #+BEGIN_SRC emacs-lisp
   (use-package org-bullets
     :init
     (add-hook 'org-mode-hook
               (lambda()(org-bullets-mode 1))))
 #+END_SRC
-** table alignment 
-- CN & EN alignment
-- print fonts:
- =(print (font-family-list))=
-#+BEGIN_SRC emacs-lisp
-    ;; Mono 14 vs. Microsoft Yahei 22
-    ;; M-x describe-char for details
-    ;; Linux add Microsoft Yahei:
-    ;;   cp path/Windows/Fonts/msyh* /usr/share/fonts/customize
-    ;;   fc-cache -vf
 
-    ;; windows and linux need different mono name and size
-    ;;(set-face-attribute 'default nil
-    ;;                    :font (if (string-equal system-type "gnu/linux")
-    ;;                              "Mono 14" "Courier New 14")
-    ;;                    :width 'normal :weight 'normal)
+** Org literal programming(Source Code Block)
+#+BEGIN_SRC emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((emacs-lisp . t)
+     (ditaa . t)
+     (dot . t)
+     (C . t)))
+
+  (defun y:org-confirm-babel-evaluate(lang body)
+    (not (or (string= lang "ditaa")
+             (string= lang "dot"))))
+  (setq org-confirm-babel-evaluate 'y:org-confirm-babel-evaluate)
+
+  ;; enable image preview
+  (defun y:display-inline-image()
+    (condition-case nil (org-display-inline-images)
+      (error nil)))
+  (add-hook 'org-babel-after-execute-hook 'y:display-inline-image t)
+#+END_SRC
+
+** Font config for table alignment
+#+BEGIN_SRC emacs-lisp
+  (defun y:org-set-fontset-set()
+    (when (find-font (font-spec :name "Source Code Pro" :size 15))
+      (set-frame-font (font-spec :name "Source Code Pro" :size 15) nil nil))
 
     ;; MS YaHei for CJK
-    ;;(dolist (charset '(kana han symbol cjk-misc bopomofo))
-    ;;  (set-fontset-font nil charset
-    ;;                    (font-spec :family "Microsoft YaHei Light" :size 22)))
-
-    ;; FIXME: What we need is to config chinese font just for org-table
-   (defun org-set-fontset-set()
-     (when (find-font (font-spec :name "Source Code Pro" :size 15))
-       (set-frame-font (font-spec :name "Source Code Pro" :size 15) nil nil))
-
-     ;; MS YaHei for CJK
-     (dolist (charset '(kana han symbol cjk-misc bopomofo))
-       (set-fontset-font nil charset
-                         (font-spec :family "Microsoft YaHei" :size 18))))
-   (add-hook 'org-mode-hook 'org-set-fontset-set)
+    (dolist (charset '(kana han symbol cjk-misc bopomofo))
+      (set-fontset-font nil charset
+			(font-spec :family "Microsoft YaHei" :size 18))))
+  (add-hook 'org-mode-hook 'y:org-set-fontset-set)
 #+END_SRC
 
-** html
+** Export and Publish
 #+BEGIN_SRC emacs-lisp
   (use-package htmlize)
-#+END_SRC
-** blogs
-#+BEGIN_SRC emacs-lisp
-    (defun y:org-publish-setup()
-      "Org publish setup"
-      ;; http://orgmode.org/manual/Publishing-options.html
-      (setq org-export-with-sub-superscripts nil)
-      (setq org-export-with-timestamps nil)
-      (setq org-export-author "yanyg")
-      (setq org-export-with-creator nil)
-      (setq org-export-with-date nil)
-      (setq org-export-with-email t)
-      (setq org-export-with-toc t)
-      (setq org-export-with-section-numbers 't)
-      (setq org-html-preamble nil)
-      (setq org-html-postamble nil)
-      (setq org-html-link-home "https://ycode.org")
-      (when (file-exists-p "~/hp/css/site.css")
-        (setq org-html-head
-              (concat
-               "<style type=\"text/css\">"
-               (with-temp-buffer
-                 (insert-file "~/hp/css/site.css")
-                 (buffer-string))
-               "</style>")))
-      ;; see org-html-style-default
-      (setq org-html-head-include-default-style nil)
 
-      ;; see org-html-scripts
-      ;; (setq org-html-head-include-scripts nil)
-      (setq org-html-htmlize-output-type 'css)
-
-      ;;
-      (setq org-html-preamble-format '(("en" "<table border=\"2\" cellspacing=\"0\" cellpadding=\"6\" rules=\"groups\" frame=\"hsides\">
-<colgroup>
-<col  class=\"org-left\" />
-<col  class=\"org-left\" />
-<col  class=\"org-left\" />
-<col  class=\"org-left\" />
-<col  class=\"org-left\" />
-</colgroup>
-
-<tbody><tr>
-<td class=\"org-left\"><a href=\"index.html\">Home</a></td>
-<td class=\"org-left\"><a href=\"https://github.com/yygcode\">Github</a></td>
-</tr></tbody></table>"))
-  )
-
-      ;; http://orgmode.org/worg/org-tutorials/org-publish-html-tutorial.html
-      (setq org-publish-project-alist
-            '(("pages"
-               :base-directory "~/hp/src/"
-               :publishing-directory "~/hp/"
-               :recursive nil
-               :with-author t
-               :with-date t
-               :with-email t
-               :html-head-include-default-style nil
-               :html-head "<link rel=\"shortcut icon\" href=\"http://ycode.org/css/favicon.ico\" />
-    <link rel=\"stylesheet\" type=\"text/css\" href=\"css/site.css\" />"
-               :publishing-function org-html-publish-to-html
-               ;; :auto-sitemap 't
-               ;; :sitemap-filename "sitemap.org"
-               ;; :sitemap-title "Sitemap"
-               :with-toc 't)
-              ("blog"
-               :base-directory "~/hp/src/blogs/"
-               :publishing-directory "~/hp/blogs/"
-               :recursive nil
-               :html-head-include-default-style nil
-               :html-head "<link rel=\"shortcut icon\" href=\"http://ycode.org/css/favicon.ico\" />
-    <link rel=\"stylesheet\" type=\"text/css\" href=\"../css/site.css\" />"
-               :publishing-function org-html-publish-to-html
-               :section-numbers 't
-               :with-toc 't)
-              ("site" :components ("pages" "blog"))))
-      )
-
-    (use-package ox-publish
-      :pin org
-      :ensure org-plus-contrib
-      :init
-      (y:org-publish-setup))
-#+END_SRC
-** remove additional spaces for CN
-#+BEGIN_SRC emacs-lisp
   (defadvice org-html-paragraph (before org-html-paragraph-advice
-                                        (paragraph contents info) activate)
+					(paragraph contents info) activate)
     "Join consecutive Chinese lines into a single long line without
-  unwanted space when exporting org-mode to html."
+      unwanted space when exporting org-mode to html."
     (let* ((origin-contents (ad-get-arg 1))
-           (fix-regexp "[[:multibyte:]]")
-           (fixed-contents
-            (replace-regexp-in-string
-             (concat "\\(" fix-regexp "\\) *\n *\\(" fix-regexp "\\)")
-             "\\1\\2" origin-contents)))
+	   (fix-regexp "[[:multibyte:]]")
+	   (fixed-contents
+	    (replace-regexp-in-string
+	     (concat "\\(" fix-regexp "\\) *\n *\\(" fix-regexp "\\)")
+	     "\\1\\2" origin-contents)))
       (ad-set-arg 1 fixed-contents)))
 
-  ;; how to rewrite with new advice policy ?
-  ;; (defun org-html-paragraph--remove-mb-linefeed-space(paragraph contents info)
-  ;;   "Join consecutive Chinese lines into a single long line without
-  ;; unwanted space when exporting org-mode to html."
-  ;;   (let* ((origin-contents (ad-get-arg 1))
-  ;;          (fix-regexp "[[:multibyte:]]")
-  ;;          (fixed-contents
-  ;;           (replace-regexp-in-string
-  ;;            (concat "\\(" fix-regexp "\\) *\n *\\(" fix-regexp "\\)")
-  ;;            "\\1\\2" origin-contents)))
-  ;;     (ad-set-arg 1 fixed-contents)))
-  ;; (advice-add 'org-html-paragraph :before #'org-html-paragraph--remove-mb-linefeed-space)
-#+END_SRC
-** screenshot
-   :PROPERTIES:
-   :ID:       653a0c35-ebe2-4a5a-bdc6-13d7f541aca2
-   :END:
-- Github: [[https://github.com/dfeich/org-screenshot]]
-#+BEGIN_SRC emacs-lisp
-  (use-package org-attach-screenshot
-    :pin melpa)
-#+END_SRC
-[[file:data/65/3a0c35-ebe2-4a5a-bdc6-13d7f541aca2/screenshot-20171129-195954.png]]
-* efficiency and enhancements
-** helm
-#+BEGIN_SRC emacs-lisp
-  (use-package helm
-    :config
-    ;; always use english input in helm minibuffer
-    ;; use C-\ (toggle-input-method) to toggle to other(e.g. pyim)
-  )
-  (use-package helm-config
-    :ensure helm
-    :config
-    (helm-set-local-variable 'current-input-method nil)
-    :bind
-    ("M-x" . helm-M-x)
-    ("C-x b" . helm-mini))
+  (defun y:org-publish-setup()
+    "Org publish setup"
+    ;; http://orgmode.org/manual/Publishing-options.html
+    (setq org-export-with-sub-superscripts nil)
+    (setq org-export-with-timestamps nil)
+    (setq org-export-author "yanyg")
+    (setq org-export-with-creator nil)
+    (setq org-export-with-date nil)
+    (setq org-export-with-email t)
+    (setq org-export-with-toc t)
+    (setq org-export-with-section-numbers 't)
+    (setq org-html-preamble nil)
+    (setq org-html-postamble nil)
+    (setq org-html-link-home "https://ycode.org")
+    (when (file-exists-p "~/hp/css/site.css")
+      (setq org-html-head
+	    (concat
+	     "<style type=\"text/css\">"
+	     (with-temp-buffer
+	       (insert-file "~/hp/css/site.css")
+	       (buffer-string))
+	     "</style>")))
+    ;; see org-html-style-default
+    (setq org-html-head-include-default-style nil)
 
-  (use-package helm-core)
-  (add-to-list 'load-path "~/.emacs.d/elpa/helm-core-20170622.1355")
+    ;; see org-html-scripts
+    ;; (setq org-html-head-include-scripts nil)
+    (setq org-html-htmlize-output-type 'css)
 
-#+END_SRC
+    ;;
+    (setq org-html-preamble-format '(("en" "<table border=\"2\" cellspacing=\"0\" cellpadding=\"6\" rules=\"groups\" frame=\"hsides\">
+  <colgroup>
+  <col  class=\"org-left\" />
+  <col  class=\"org-left\" />
+  <col  class=\"org-left\" />
+  <col  class=\"org-left\" />
+  <col  class=\"org-left\" />
+  </colgroup>
 
-** company
-*** reference: [[https://company-mode.github.io/][home page]]
-#+BEGIN_SRC emacs-lisp
-  (use-package company
-    :diminish company-mode
-    :init
-    (add-hook 'after-init-hook 'global-company-mode)
-    :config
-    (progn
-      ;; Use Company for completion
-      (bind-key [remap completion-at-point] #'company-complete)
-      (setq company-tooltip-align-annotations t
-            ;; Easy navigation to candidates with M-<n>
-            company-show-numbers t)
-      (setq company-dabbrev-downcase nil)
-      (setq company-minimum-prefix-length 2)
-      (setq company-idle-delay 0.5)
+  <tbody><tr>
+  <td class=\"org-left\"><a href=\"index.html\">Home</a></td>
+  <td class=\"org-left\"><a href=\"https://github.com/yygcode\">Github</a></td>
+  </tr></tbody></table>"))
+	  )
 
-      (defun text-mode-hook-setup ()
-        (make-local-variable 'company-backends)
-        (add-to-list 'company-backends 'company-ispell)
-        (setq company-ispell-dictionary (expand-file-name "~/.emacs.d/misc/english-words.txt")))
-      (add-hook 'text-mode-hook 'text-mode-hook-setup)
-      (defun toggle-company-ispell ()
-        (interactive)
-        (cond
-         ((memq 'company-ispell company-backends)
-          (setq company-backends (delete 'company-ispell company-backends))
-          (message "company-ispell disabled"))
-         (t
-          (add-to-list 'company-backends 'company-ispell)
-          (message "company-ispell enabled!")))))
-    ;;:bind
-    ;;("M-;" . company-complete-common)
+    ;; http://orgmode.org/worg/org-tutorials/org-publish-html-tutorial.html
+    (setq org-publish-project-alist
+	  '(("pages"
+	     :base-directory "~/hp/src/"
+	     :publishing-directory "~/hp/"
+	     :recursive nil
+	     :with-author t
+	     :with-date t
+	     :with-email t
+	     :html-head-include-default-style nil
+	     :html-head "<link rel=\"shortcut icon\" href=\"http://ycode.org/css/favicon.ico\" />
+      <link rel=\"stylesheet\" type=\"text/css\" href=\"css/site.css\" />"
+	     :publishing-function org-html-publish-to-html
+	     ;; :auto-sitemap 't
+	     ;; :sitemap-filename "sitemap.org"
+	     ;; :sitemap-title "Sitemap"
+	     :with-toc 't)
+	    ("blog"
+	     :base-directory "~/hp/src/blogs/"
+	     :publishing-directory "~/hp/blogs/"
+	     :recursive nil
+	     :html-head-include-default-style nil
+	     :html-head "<link rel=\"shortcut icon\" href=\"http://ycode.org/css/favicon.ico\" />
+      <link rel=\"stylesheet\" type=\"text/css\" href=\"../css/site.css\" />"
+	     :publishing-function org-html-publish-to-html
+	     :section-numbers 't
+	     :with-toc 't)
+	    ("site" :components ("pages" "blog"))))
     )
-#+END_SRC
 
-** Swiper
-*** Material
-- Manual: [[http://oremacs.com/swiper/][Swiper Manual]]
-- Elisp
-- Bug tracks
-  + need to set local variable current-input-method for [[https://github.com/emacs-helm/helm/issues/797][issue 797]]
-#+BEGIN_SRC emacs-lisp
-    (use-package ivy
-      :diminish ivy-mode
-      :init
-      (ivy-mode 1)
-      :config
-      (progn
-        (setq ivy-use-virtual-buffers t)
-        (setq ivy-count-format "%d/%d -> ")
-        ;;(ivy--regex-ignore-order)
-  )
-      :bind
-      (("C-s" . swiper)
-       ("C-c C-r" . ivy-resume)))
-
-    ;; 20170518 version needs to require the package separately
-    (use-package counsel
-      :bind
-      (;; I use helm-M-x
-       ;; ("M-x"     . counsel-M-x)
-       ("C-x C-f" . counsel-find-file)
-       ("C-h f"   . counsel-describe-function)
-       ("C-h v"   . counsel-describe-variable)
-       ("C-c g f" . counsel-git)
-       ("C-c g g" . counsel-git-grep)
-       ("C-c g l" . counsel-git-log)
-       ("C-c k"   . counsel-ag)))
-#+END_SRC
-
-** hungry delete
-#+BEGIN_SRC emacs-lisp
-  (use-package hungry-delete
-    :diminish hungry-delete-mode
+  (use-package ox-publish
+    :pin org
+    :ensure org-plus-contrib
     :init
-    (global-hungry-delete-mode 1))
+    (y:org-publish-setup))
+
 #+END_SRC
+
+** Publish
 * Documents view                                                        :pdf:
 ** pdf-tools
 - github: [[https://github.com/politza/pdf-tools][pdf-tools-github]]
@@ -651,24 +434,27 @@ FIXME: who require abbrev ? analyse delayed, diminish it now
 - emacs: package-list-packages, then select org, press i and x.
 - C-<up> and C-<down> to scroll in another window
 #+BEGIN_SRC emacs-lisp
-  (defun y:scroll-other-window(&optional lines)
+  (defun y:scroll-other-window(&optional arg)
+    "Scroll other window with arg multiply 10"
     (interactive "p")
+    (setq lines (* arg 10))
     (with-selected-window (other-window-for-scrolling)
       (if (string-equal major-mode "pdf-view-mode")
           (progn
-            (setq lines (or lines 1))
-            (let* ((count lines)
+            ;;            (setq lines (or lines 1))
+            (let* ((count arg)
                    v)
               (or (< 0 count) (setq count (- count)))
               (dotimes (v count)
                 (if (< lines 0)
                     (pdf-view-previous-line-or-previous-page 1)
                   (pdf-view-next-line-or-next-page 1)))))
-        (scroll-other-window lines))))
+        (message "lines %d" lines)
+        (scroll-up-line lines))))
 
   (defun y:scroll-other-window-opposite(&optional lines)
     (interactive "p")
-    (y:scroll-other-window (and lines (- lines))))
+    (y:scroll-other-window (- lines)))
 
   (global-set-key (kbd "C-c C-n") 'y:scroll-other-window)
   (global-set-key (kbd "C-c C-p") 'y:scroll-other-window-opposite)
@@ -683,54 +469,253 @@ FIXME: who require abbrev ? analyse delayed, diminish it now
      ("C-c p" . y:scroll-other-window-opposite)))
 #+END_SRC
 * Development Enviroments
-** highlight-symbol
-- Homepage: [[https://github.com/nschum/highlight-symbol.el][github]]
+** Common
+*** auto complete
+- Homepage: [[https://github.com/auto-complete/auto-complete][GitHub Auto-Complete]]
+- EmacsWiki: [[https://www.emacswiki.org/emacs/AutoComplete][EmacsWiki Auto-Complete]]
+#+BEGIN_SRC emacs-lisp
+  (use-package auto-complete-config
+    :diminish auto-complete-mode
+    :ensure auto-complete
+    :init
+    (ac-config-default))
+#+END_SRC
+
+*** cedet
+- Homepage: [[http://cedet.sourceforge.net/][Cedet SourceForge]]
+#+BEGIN_SRC emacs-lisp
+  (defun y:ac-source-semantic()
+    (add-to-list 'ac-sources 'y:ac-source-semantic))
+  (add-hook 'c-mode-common-hook 'y:ac-source-semantic)
+  (use-package cedet
+    :init
+    (global-ede-mode 1)
+    (global-semantic-idle-scheduler-mode 1))
+#+END_SRC
+
+*** TODO ecb
+- depends on semantic
+- https://stackoverflow.com/questions/3134026/emacs-23-2-with-ecb-2-40-file-error-cannot-open-load-file-semantic-ctxt
+#+BEGIN_SRC emacs-lisp 
+  (use-package ecb)
+#+END_SRC
+*** highlight-symbol
+- Homepage: [[https://github.com/nschum/highlight-symbol.el][GitHub]]
 #+BEGIN_SRC emacs-lisp
   (use-package highlight-symbol
+    :diminish highlight-symbol-mode
+    :init
+    (add-hook 'prog-mode-hook #'highlight-symbol-mode)
+    :config
+    (setq highlight-symbol-idle-delay 0.8)
     :bind
     (([f8] . highlight-symbol-at-point)
      ([S-f8] . highlight-regexp)))
 #+END_SRC
-** cc-mode
-*** introduction
-A mode for editing files containing C, C++, Objective-C, Java, CORBA IDL, PIKE
-and AWK code. This incarnation of the mode is descended from c-model.el,
-c++-mode.el, and awk.el.
 
-Note that the name of the package is "CC Mode", but there is no top level cc-mode
-entry point. All if the variables, commands, and functions in CC mode are prefixed
-with c-thing, and c-mode, c++-mode, objc-mode, etc.
-- Abbreviate:
-- Reference Materials:
-  + [[http://cc-mode.sourceforge.net/html-manual/index.html][Manual]]
-  + 
-
-**** Homepage: 
-*** further works
-*** setup
-**** default behavior
-- Real TAB, width 8
+*** highlight surrounding parenthesis
 #+BEGIN_SRC emacs-lisp
-  (defun y:c-mode-common-hook()
-    "CC mode default config"
-    (setq tab-width 8
-          indent-tabs-mode t
-          c-syntactic-indentation t)
-    (c-toggle-auto-newline -1) ;; turn off auto-newline, I like with RET manually
-    )
-  (add-hook 'c-mode-common-hook 'y:c-mode-common-hook)
-
-  (setq c-cleanup-list '(brace-else-brace
-                         brace-elseif-brace
-                         space-before-funcall
-empty-defun-braces))
+  (use-package highlight-parentheses
+    :diminish highlight-parentheses-mode
+    :init
+    (add-hook 'prog-mode-hook 'highlight-parentheses-mode))
 #+END_SRC
 
-**** style define and config
-***** inspur mcs style - y:inspur
+*** iedit
+- Homepage: [[https://github.com/victorhge/iedit][Github Iedit]]
 #+BEGIN_SRC emacs-lisp
+  (use-package iedit
+    :bind
+    (("C-;" . iedit-mode)))
+#+END_SRC
+*** smartparens
+- ref [[https://ebzzry.io/en/emacs-pairs/][emacs-pairs]], [[https://github.com/Fuco1/smartparens][smartparens github]], and [[https://github.com/Fuco1/smartparens/wiki][wiki]]
+#+BEGIN_SRC emacs-lisp
+  ;; Do not change smartparens to smartparens-config and change 'ensure t'
+  ;; to 'ensure smartparens' for mode line could not hide smartparens-mode
+  ;; and config section will not work
+  (use-package smartparens
+    :diminish smartparens-mode
+    :ensure t
+    :init
+    (progn
+      (show-smartparens-global-mode t)
+      (smartparens-global-mode 1)
+      (add-hook 'prog-mode-hook 'turn-on-smartparens-strict-mode)
+      (setq sp-base-key-bindings 'paredit)
+      (setq sp-autoskip-closing-pair 'always)
+      (setq sp-hybrid-kill-entire-symbol nil)
+      (sp-use-paredit-bindings)
+      )
+    :config
+    (sp-local-pair 'emacs-lisp-mode "'" nil :actions nil)
+    (sp-local-pair 'lisp-interaction-mode "'" nil :actions nil))
+#+END_SRC
+
+*** yasnippet
+- Homepage: [[https://github.com/AndreaCrotti/yasnippet-snippets/tree/master][GitHub Yasnippet]]
+#+BEGIN_SRC emacs-lisp
+  (use-package yasnippet
+    :diminish yas-minor-mode
+    :init
+    (yas-global-mode 1))
+#+END_SRC
+
+*** ggtags
+#+BEGIN_SRC emacs-lisp
+  (use-package ggtags
+    :diminish ggtags-mode
+    :init
+    (add-hook 'c-mode-common-hook
+              (lambda()
+                (when (derived-mode-p 'c-mode 'c++-mode 'java-mode 'asm-mode)
+                  (ggtags-mode 1)))))
+  (require 'ggtags)
+  (define-key ggtags-mode-map (kbd "C-c g s") 'ggtags-find-other-symbol)
+  (define-key ggtags-mode-map (kbd "C-c g h") 'ggtags-view-tag-history)
+  (define-key ggtags-mode-map (kbd "C-c g r") 'ggtags-find-reference)
+  (define-key ggtags-mode-map (kbd "C-c g f") 'ggtags-find-file)
+  (define-key ggtags-mode-map (kbd "C-c g c") 'ggtags-create-tags)
+  (define-key ggtags-mode-map (kbd "C-c g u") 'ggtags-update-tags)
+
+  (define-key ggtags-mode-map (kbd "M-.") 'ggtags-find-tag-dwim)
+  (define-key ggtags-mode-map (kbd "M-,") 'pop-tag-mark)
+#+END_SRC
+
+*** helm gtags
+- I prefer to use ggtags, comment it.
+#+BEGIN_SRC emacs-lisp
+  ;; (use-package helm-gtags
+  ;;   :diminish helm-gtags-mode
+  ;;   :init
+  ;;   (progn
+  ;;     (setq helm-gtags-prefix-key "\C-cg"
+  ;;           helm-gtags-ignore-case t)
+  ;;     (add-hook 'c-mode-hook 'helm-gtags-mode)
+  ;;     (add-hook 'c++-mode-hook 'helm-gtags-mode)
+  ;;     (add-hook 'asm-mode-hook 'helm-gtags-mode)
+  ;;     (add-hook 'java-mode-hook 'helm-gtags-mode)
+  ;;     )
+  ;;   :bind
+  ;;   (("M-." . helm-gtags-dwim)
+  ;;    ("M-," . helm-gtags-pop-stack)
+  ;;    ("M-;" . helm-gtags-find-rtag)))
+#+END_SRC
+
+** C/C++
+*** auto complete C headers
+- Homepage: [[https://github.com/mooz/auto-complete-c-headers][GitHub Auto-complete-C-headers]]
+- include dir in mingw: =gcc -v -c x.c=
+- include dir in linux/cygwin: =gcc -xc++ -E -v -=
+#+BEGIN_SRC emacs-lisp
+  (when (string= system-type "windows-nt")
+    (setq y:ac-c-headers
+          '("F:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/7.2.0/include"
+            "F:/msys64/mingw64/include"
+            "F:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/7.2.0/include-fixed"
+            "F:/msys64/mingw64/x86_64-w64-mingw32/include")))
+
+  (defun y:ac-c-headers-init()
+    (add-to-list 'ac-sources 'ac-source-c-headers)
+    ;;(add-to-list 'achead:include-directories '"F:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/7.2.0/include")
+    (setq achead:include-directories (append y:ac-c-headers
+                                             achead:include-directories))
+    )
+
+  (use-package auto-complete-c-headers
+    :defer nil
+    :init
+    (require 'auto-complete-c-headers)
+    (add-hook 'c-mode-hook 'y:ac-c-headers-init)
+    (add-hook 'c++-mode-hook 'y:ac-c-headers-init))
+#+END_SRC
+
+*** style definition
+- open source code (e.g. example.c)
+- exec 'c-guess-no-install' 'c-guess-view'
+#+BEGIN_SRC emacs-lisp
+  (defconst y:c-style-common
+    '((c-tab-always-indent . nil) ; manualy added
+      (c-basic-offset . 8)     ; Guessed value
+      (c-offsets-alist
+       (block-close . 0)       ; Guessed value
+       (brace-list-close . 0)  ; Guessed value
+       (brace-list-entry . 0)  ; Guessed value
+       (brace-list-intro . +)  ; Guessed value
+       (class-close . 0)       ; Guessed value
+       (defun-block-intro . +) ; Guessed value
+       (defun-close . 0)       ; Guessed value
+       (defun-open . 0)        ; Guessed value
+       (else-clause . 0)       ; Guessed value
+       (inclass . +)           ; Guessed value
+       (statement . 0)         ; Guessed value
+       (statement-block-intro . +) ; Guessed value
+       (statement-cont . +)    ; Guessed value
+       (substatement . +)      ; Guessed value
+       (topmost-intro . 0)     ; Guessed value
+       (access-label . -)
+       (annotation-top-cont . 0)
+       (annotation-var-cont . +)
+       (arglist-close . c-lineup-close-paren)
+       (arglist-cont c-lineup-gcc-asm-reg 0)
+       (arglist-cont-nonempty . c-lineup-arglist)
+       (arglist-intro . c-lineup-arglist-intro-after-paren)
+       (block-open . 0)
+       (brace-entry-open . 0)
+       (brace-list-open . +)
+       (c . c-lineup-C-comments)
+       (case-label . 0)
+       (catch-clause . 0)
+       (class-open . 0)
+       (comment-intro . c-lineup-comment)
+       (composition-close . 0)
+       (composition-open . 0)
+       (cpp-define-intro c-lineup-cpp-define +)
+       (cpp-macro . -1000)
+       (cpp-macro-cont . +)
+       (do-while-closure . 0)
+       (extern-lang-close . 0)
+       (extern-lang-open . 0)
+       (friend . 0)
+       (func-decl-cont . +)
+       (incomposition . +)
+       (inexpr-class . +)
+       (inexpr-statement . +)
+       (inextern-lang . +)
+       (inher-cont . c-lineup-multi-inher)
+       (inher-intro . +)
+       (inlambda . c-lineup-inexpr-block)
+       (inline-close . 0)
+       (inline-open . 0)
+       (inmodule . +)
+       (innamespace . +)
+       (knr-argdecl . 0)
+       (knr-argdecl-intro . 5)
+       (label . 0)
+       (lambda-intro-cont . +)
+       (member-init-cont . c-lineup-multi-inher)
+       (member-init-intro . +)
+       (module-close . 0)
+       (module-open . 0)
+       (namespace-close . 0)
+       (namespace-open . 0)
+       (objc-method-args-cont . c-lineup-ObjC-method-args)
+       (objc-method-call-cont c-lineup-ObjC-method-call-colons c-lineup-ObjC-method-call +)
+       (objc-method-intro .
+                          [0])
+       (statement-case-intro . +)
+       (statement-case-open . +)
+       (stream-op . c-lineup-streamop)
+       (string . -1000)
+       (substatement-label . 0)
+       (substatement-open . +)
+       (template-args-cont c-lineup-template-args +)
+       (topmost-intro-cont first c-lineup-topmost-intro-cont c-lineup-gnu-DEFUN-intro-cont)))
+    "y:c-common")
+  (c-add-style "y:c-common" y:c-style-common)
+
   ;; guessed from linux kernel code init/main.c and adjust for mcs code style
-  (defconst y:inspur-style
+  (defconst y:c-style-inspur
     '((c-tab-always-indent . nil) ; manualy added
       (c-basic-offset . 4)     ; Guessed value
       (c-offsets-alist
@@ -807,357 +792,135 @@ empty-defun-braces))
        (substatement-open . 0)
        (template-args-cont c-lineup-template-args +)
        (topmost-intro-cont . c-lineup-topmost-intro-cont)))
-    "y:mcs")
-  (c-add-style "y:inspur" y:inspur-style)
-#+END_SRC
+    "y:c-mcs")
+  (c-add-style "y:c-mcs" y:c-style-inspur)
 
-***** style detect and set
-- use y:inspur if directory match "/mcs/"
-- use linux(kernel) for others
-#+BEGIN_SRC emacs-lisp
-  (defun y:c-mode-hook()
+  (defun y:c-style-hook()
     "Config c style depends on file pathname"
     (if (and (buffer-file-name)
              (string-match "/mcs/" (buffer-file-name)))
         (progn
-          (c-set-style "y:inspur")
+          (c-set-style "y:c-mcs")
           (setq indent-tabs-mode nil))
       (progn
-        (c-set-style  "linux")
+        (c-set-style  "y:c-common")
         (setq indent-tabs-mode t))
       ))
-  (add-hook 'c-mode-hook 'y:c-mode-hook)
+  (add-hook 'c-mode-hook 'y:c-style-hook)
 #+END_SRC
-** cedet
-*** introduce
-- Abbreviate: Collection of Emacs Development Environment Tools
-- Author: Eric Ludlam([[http://cedet.sourceforge.net/eric.shtml][Eric Page]])
-- Homepage: [[http://cedet.sourceforge.net/][sourceforge]]
-- Functions:
-  + Project management system
-  + smart completion
-  + symbol reference
-  + code generation
-  + UML diagrams
-  + advanced code browsing
-- Install: Builtin packages, no install needed.
-  + For latest version, see [[http://cedet.sourceforge.net/setup.shtml][setup]]
-- Reference materials
-  + [[http://alexott.net/en/writings/emacs-devenv/EmacsCedet.html][A gentle introduction to CEDET]]
-  + 
-- Code
-  + Sourceforge: [[https://sourceforge.net/projects/cedet/?source=directory][download]]
-  + git: git clone http://git.code.sf.net/p/cedet/git
-- Currently I use builtin version. For customized version, see follows:
+** Python
+* Misc Packages
+** company
+- Homepage: [[https://company-mode.github.io/][Company Mode in GitHub IO]]
+- Ref [[http://blog.binchen.org/posts/emacs-auto-completion-for-non-programmers.html][completion for non-programmers]]
 #+BEGIN_SRC emacs-lisp
-  ;; (add-to-list 'load-path "~/.emacs.d/cedet")
-  ;; (add-to-list 'load-path "~/.emacs.d/cedet/contrib")
-  ;; (require 'cedet-devel-load)
-  ;; (require 'cedet-contrib-load)
-#+END_SRC
-
-*** TODO further works
-    SCHEDULED: <2017-06-30 Fri>
-- Auto check builtin cedet
-- Auto git clone code and config latest stable version
-- jump local variable: semantic-ia-fast-jump
-*** setup
-#+BEGIN_SRC emacs-lisp
-;;  (use-package cedet)
-#+END_SRC
-**** semantic
-#+BEGIN_SRC emacs-lisp
-  (add-to-list 'load-path "~/.emacs.d/site-lisp/cedet-git")
-
-  (require 'cedet)
-    (require 'semantic)
-
-    (semantic-mode 1)
-    (semantic-add-system-include "~/work/git/linux-stable/include")
-    (semantic-add-system-include "~/work/git/linux-stable/arch/x86/include")
-
-  ;;(semantic-load-enable-excessive-code-helpers)
-  (global-ede-mode 1)
-  ;;(semantic-load-enable-code-helpers)
-    (global-semanticdb-minor-mode 1)
-    (global-semantic-idle-scheduler-mode 1)
-
-    (global-semantic-idle-local-symbol-highlight-mode)
-  (global-semantic-idle-summary-mode)
-
-  ;;  (global-semantic-idle-completions-mode t)
-  ;;  (global-semantic-decoration-mode t)
-    (global-semantic-highlight-func-mode t)
-    (global-semantic-show-unmatched-syntax-mode t)
-
-(require 'semantic/ia)
-(require 'semantic/bovine/gcc)
-
-(defun my-cedet-hook ()
-  (local-set-key [(control return)] 'semantic-ia-complete-symbol)
-  (local-set-key "\C-c?" 'semantic-ia-complete-symbol-menu)
-  (local-set-key "\C-c>" 'semantic-complete-analyze-inline)
-  (local-set-key "\C-cp" 'semantic-analyze-proto-impl-toggle))
-(add-hook 'c-mode-common-hook 'my-cedet-hook)
-#+END_SRC
-** Common Parts                                      :smartparens:hightlight:
-*** smartparens
-  + config reference
-    [[https://ebzzry.io/en/emacs-pairs/][emacs-pairs]]
-    [[https://github.com/Fuco1/smartparens][smartparens github]]
-    [[https://github.com/Fuco1/smartparens/wiki][wiki]]
-#+BEGIN_SRC emacs-lisp
-  ;; Do not change smartparens to smartparens-config and change 'ensure t'
-  ;; to 'ensure smartparens' for mode line could not hide smartparens-mode
-  ;; and config section will not work
-  (use-package smartparens
-    :diminish smartparens-mode
-    :ensure t
+  (use-package company
+    :diminish company-mode
     :init
+    (add-hook 'after-init-hook 'global-company-mode)
+    :config
     (progn
-      (show-smartparens-global-mode t)
-      (smartparens-global-mode 1)
-      (add-hook 'prog-mode-hook 'turn-on-smartparens-strict-mode)
-      (setq sp-base-key-bindings 'paredit)
-      (setq sp-autoskip-closing-pair 'always)
-      (setq sp-hybrid-kill-entire-symbol nil)
-      (sp-use-paredit-bindings)
+      ;; Use Company for completion
+      (bind-key [remap completion-at-point] #'company-complete)
+      (setq company-tooltip-align-annotations t
+            ;; Easy navigation to candidates with M-<n>
+            company-show-numbers t)
+      (setq company-dabbrev-downcase nil)
+      (setq company-minimum-prefix-length 3)
+      (setq company-idle-delay 0.5)
+      (setq company-ispell-available t)
+
+      (defun text-mode-hook-setup ()
+        (make-local-variable 'company-backends)
+        (add-to-list 'company-backends 'company-ispell)
+        (setq company-ispell-dictionary
+              (expand-file-name "~/.emacs.d/misc/english-words.txt")))
+      (add-hook 'text-mode-hook 'text-mode-hook-setup)
+      (defun toggle-company-ispell ()
+        (interactive)
+        (cond
+         ((memq 'company-ispell company-backends)
+          (setq company-backends (delete 'company-ispell company-backends))
+          (message "company-ispell disabled"))
+         (t
+          (add-to-list 'company-backends 'company-ispell)
+          (message "company-ispell enabled!")))))
+    ;;:bind
+    ;;("M-;" . company-complete-common)
+    )
+#+END_SRC
+
+** helm
+- GitHub IO: [[https://emacs-helm.github.io/helm/]]
+- WIKI: [[https://github.com/emacs-helm/helm/wiki]]
+- Bug: need to set local variable current-input-method for [[https://github.com/emacs-helm/helm/issues/797][issue 797]]
+#+BEGIN_SRC emacs-lisp
+  (use-package helm-config
+    :ensure helm
+    :config
+    ;; always use english input in helm minibuffer
+    ;; use C-\ (toggle-input-method) to toggle to other(e.g. pyim)
+    (helm-set-local-variable 'current-input-method nil)
+    :bind
+    ("M-x" . helm-M-x)
+    ("C-x b" . helm-mini))
+
+  ;;(use-package helm-core)
+  ;;(add-to-list 'load-path "~/.emacs.d/elpa/helm-core-20170622.1355")
+#+END_SRC
+
+** hungry delete
+#+BEGIN_SRC emacs-lisp
+  (use-package hungry-delete
+    :diminish hungry-delete-mode
+    :init
+    (global-hungry-delete-mode 1))
+#+END_SRC
+
+** swiper
+- Manual: [[http://oremacs.com/swiper/][Swiper Manual]]
+#+BEGIN_SRC emacs-lisp
+  (use-package ivy
+    :diminish ivy-mode
+    :init
+    (ivy-mode 1)
+    :config
+    (progn
+      (setq ivy-use-virtual-buffers t)
+      (setq ivy-count-format "%d/%d -> ")
+      ;;(ivy--regex-ignore-order)
       )
+    :bind
+    (("C-s" . swiper)
+     ("C-c C-r" . ivy-resume)))
+
+  ;; 20170518 version needs to require the package separately
+  (use-package counsel
+    :bind
+    (;; I use helm-M-x replaced
+     ;; ("M-x"     . counsel-M-x)
+     ("C-x C-f" . counsel-find-file)
+     ("C-h f"   . counsel-describe-function)
+     ("C-h v"   . counsel-describe-variable)
+     ("C-c g f" . counsel-git)
+     ("C-c g g" . counsel-git-grep)
+     ("C-c g l" . counsel-git-log)
+     ("C-c k"   . counsel-ag)))
+#+END_SRC
+
+** google search
+- google this package: [[https://github.com/Malabarba/emacs-google-this][Emacs Google This]]
+#+BEGIN_SRC emacs-lisp
+  (use-package google-this
+    :diminish google-this-mode
     :config
-    (sp-local-pair 'emacs-lisp-mode "'" nil :actions nil)
-    (sp-local-pair 'lisp-interaction-mode "'" nil :actions nil))
+    (google-this-mode 1)
+    :bind-keymap ("C-c s" . google-this-mode-submap))
 #+END_SRC
 
-*** highlight surrounding parentheses
-#+BEGIN_SRC emacs-lisp
-  (use-package highlight-parentheses
-    :diminish highlight-parentheses-mode
-    :init
-    (add-hook 'prog-mode-hook 'highlight-parentheses-mode))
-#+END_SRC
-
-*** highlight symbol
-- Home page: [[https://github.com/nschum/highlight-symbol.el][github]]
-- 
-#+BEGIN_SRC emacs-lisp
-  (use-package highlight-symbol
-    :init
-    (highlight-symbol-nav-mode))
-#+END_SRC
-*** yasnippet
-  + source code: [[https://github.com/AndreaCrotti/yasnippet-snippets/tree/master][github]]
-
-#+BEGIN_SRC emacs-lisp
-  (use-package yasnippet
-    :diminish yas-minor-mode
-    :init
-    (yas-global-mode 1))
-#+END_SRC
-
-*** cedet
-- Abbr: Collection of Emacs Development Enviroments
-
-#+BEGIN_SRC emacs-lisp
-  (use-package cedet)
-#+END_SRC
-*** irony-mode
-- source code: [[https://github.com/Sarcasm/irony-mode][github]]
-#+BEGIN_SRC emacs-lisp
-  ;; (use-package irony
-  ;;   :pin melpa
-  ;;   :init
-  ;;   (add-hook 'c-mode-hook 'irony-mode)
-  ;;   (add-hook 'c++-mode-hook 'irony-mode)
-  ;;   (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
-  ;;   (add-hook 'irony-mode-hook 'company-irony-setup-begin-commands)
-  ;;   :config
-  ;;   (progn
-  ;;     ;; Windows performance tweaks
-  ;;     ;;
-  ;;     (when (boundp 'w32-pipe-read-delay)
-  ;;       (setq w32-pipe-read-delay 0))
-  ;;     ;; Set the buffer size to 64K on Windows (from the original 4K)
-  ;;     (when (boundp 'w32-pipe-buffer-size)
-  ;;       (setq irony-server-w32-pipe-buffer-size (* 64 1024)))))
-
-  ;; (use-package company-irony
-  ;;   :init
-  ;;   (add-to-list 'company-backends 'company-irony))
-  ;; (use-package company-gtags
-  ;;   :ensure company
-  ;;   :init
-  ;;   (add-to-list 'company-backends 'company-gtags))
-#+END_SRC
-*** clean-aindent-mode
-- [[https://github.com/pmarinov/clean-aindent-mode][github homepage]]
-- I don't like it
-- Refer - [[https://www.emacswiki.org/emacs/CleanAutoIndent][CleanAutoIndent]]
-#+BEGIN_SRC emacs-lisp
-  ;; (use-package clean-aindent-mode
-  ;;   :pin melpa
-  ;;   :defer nil
-  ;;   :config
-  ;;   (clean-aindent-mode t)
-  ;;   :bind
-  ;;   (("RET" . newline-and-indent)))
-#+END_SRC
-*** which-func
-- Homepage: https://github.com/emacs-mirror/emacs/blob/master/lisp/progmodes/which-func.el
-#+BEGIN_SRC emacs-lisp
-  ;;(require 'which-func)
-  ;;(which-function-mode 1)
-#+END_SRC
-*** font faces
-- FIXME for warning faces
-#+BEGIN_SRC emacs-lisp
-  (font-lock-add-keywords
-   nil '(("\\<\\(\\(FIX\\(ME\\)?\\|TODO\\|OPTIMIZE\\|HACK\\|REFACTOR\\):\\)"
-          1 font-lock-warning-face t)))
-
-  (font-lock-add-keywords nil
-    '(("\\<\\(\\(FIX\\(ME\\)?\\|TODO\\|OPTIMIZE\\|HACK\\|REFACTOR\\):\\)" 1 font-lock-warning-face prepend)
-      ("\\<\\(and\\|or\\|not\\)\\>" . font-lock-keyword-face)))
-#+END_SRC
-** helm gtags
-#+BEGIN_SRC emacs-lisp
-  ;; (use-package helm-gtags
-  ;;   :diminish helm-gtags-mode
-  ;;   :init
-  ;;   (progn
-  ;;     (setq helm-gtags-prefix-key "\C-cg"
-  ;;           helm-gtags-ignore-case t)
-  ;;     (add-hook 'c-mode-hook 'helm-gtags-mode)
-  ;;     (add-hook 'c++-mode-hook 'helm-gtags-mode)
-  ;;     (add-hook 'asm-mode-hook 'helm-gtags-mode)
-  ;;     (add-hook 'java-mode-hook 'helm-gtags-mode)
-  ;;     )
-  ;;   :bind
-  ;;   (("M-." . helm-gtags-dwim)
-  ;;    ("M-," . helm-gtags-pop-stack)
-  ;;    ("M-;" . helm-gtags-find-rtag)))
-#+END_SRC
-
-** ggtags
-#+BEGIN_SRC emacs-lisp
-  (use-package ggtags
-    :diminish ggtags-mode
-    :init
-    (add-hook 'c-mode-common-hook
-              (lambda()
-                (when (derived-mode-p 'c-mode 'c++-mode 'java-mode 'asm-mode)
-                  (ggtags-mode 1)))))
-  (require 'ggtags)
-  (define-key ggtags-mode-map (kbd "C-c g s") 'ggtags-find-other-symbol)
-  (define-key ggtags-mode-map (kbd "C-c g h") 'ggtags-view-tag-history)
-  (define-key ggtags-mode-map (kbd "C-c g r") 'ggtags-find-reference)
-  (define-key ggtags-mode-map (kbd "C-c g f") 'ggtags-find-file)
-  (define-key ggtags-mode-map (kbd "C-c g c") 'ggtags-create-tags)
-  (define-key ggtags-mode-map (kbd "C-c g u") 'ggtags-update-tags)
-
-  (define-key ggtags-mode-map (kbd "M-,") 'pop-tag-mark)
-#+END_SRC
-** C enviroments
-*** style
-#+BEGIN_SRC emacs-lisp
-  (setq c-default-style "linux")
-#+END_SRC
-
-*** company-c-headers
-- use auto-complete-c-headers replaced
-#+BEGIN_SRC emacs-lisp
-  ;; (use-package company-c-headers
-  ;;   :pin melpa
-  ;;   :init
-  ;;   (add-to-list 'company-backends 'company-c-headers)
-  ;;   :config
-  ;;   (add-to-list 'company-c-headers-path-system "/usr/lib/gcc/x86_64-linux-gnu/"))
-#+END_SRC
-
-*** cc-mode
-#+BEGIN_SRC emacs-lisp
-  (use-package cc-mode
-    :config
-    (progn
-      (define-key c-mode-map [(tab)] 'company-complete)
-      (define-key c++-mode-map [(tab)] 'company-complete))
-)
-#+END_SRC
-
-*** semantic
-#+BEGIN_SRC emacs-lisp
-;;(require 'cc-mode)
-
-#+END_SRC
-*** auto-complete
-#+BEGIN_SRC emacs-lisp
-    (use-package auto-complete-config
-      :diminish auto-complete-mode
-      :ensure auto-complete
-      :init
-      (ac-config-default))
-
-  (defun my:ac-c-headers-init ()
-    (require 'auto-complete-c-headers)
-    (add-to-list 'ac-sources 'ac-source-c-headers))
-
-  (add-hook 'c++-mode-hook 'my:ac-c-headers-init)
-  (add-hook 'c-mode-hook 'my:ac-c-headers-init)
-     (use-package auto-complete-c-headers
-       :pin melpa
-       :defer nil)
-    ;;   :init
-    ;;   (add-hook 'c-mode-hook
-    ;;             (lambda()
-    ;;               (add-to-list 'ac-sources 'ac-source-c-headers))
-    ;;             )
-    ;;   :config
-    ;;   (add-to-list 'achead:include-directories '"/usr/include"))
-
-  (defun my:add-semantic-to-autocomplete()
-    (add-to-list 'ac-sources 'ac-source-semantic))
-  (add-hook 'c-mode-common-hook 'my:add-semantic-to-autocomplete)
-#+END_SRC
-*** iedit
-#+BEGIN_SRC emacs-lisp
-(use-package iedit)
-#+END_SRC
-*** flycheck
-#+BEGIN_SRC emacs-lisp
-  (use-package flycheck
-    :diminish flycheck-mode
-    :init
-    (global-flycheck-mode 1))
-#+END_SRC
-** color-identifier
-- Homepage: [[https://github.com/ankurdave/color-identifiers-mode][github]]
-
-#+BEGIN_SRC emacs-lisp
-;;    (use-package color-identifiers-mode
-;;      :init
-;;      (add-hook 'after-init-hook 'global-color-identifiers-mode))
-
-  ;; (let ((faces '(font-lock-comment-face font-lock-comment-delimiter-face font-lock-constant-face font-lock-type-face font-lock-function-name-face font-lock-variable-name-face font-lock-keyword-face font-lock-string-face font-lock-builtin-face font-lock-preprocessor-face font-lock-warning-face font-lock-doc-face)))
-  ;;   (dolist (face faces)
-  ;;     (set-face-attribute face nil :foreground nil :weight 'normal :slant 'normal)))
-
-  ;; (set-face-attribute 'font-lock-comment-delimiter-face nil :slant 'italic)
-  ;; (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
-  ;; (set-face-attribute 'font-lock-doc-face nil :slant 'italic)
-  ;; (set-face-attribute 'font-lock-keyword-face nil :weight 'bold)
-  ;; (set-face-attribute 'font-lock-builtin-face nil :weight 'bold)
-  ;; (set-face-attribute 'font-lock-preprocessor-face nil :weight 'bold)
-#+END_SRC
-** rainbow
-- Homepage: [[https://github.com/Fanael/rainbow-identifiers][github]]
-#+BEGIN_SRC emacs-lisp
-;;  (use-package rainbow-identifiers
-;;    :init
-;;    (add-hook 'prog-mode-hook 'rainbow-identifiers-mode))
-#+END_SRC
-** TODO ede
 * Dictionary
 ** youdao
-- Home page: [[https://github.com/xuchunyang/youdao-dictionary.el][github]]
+- Homepage: [[https://github.com/xuchunyang/youdao-dictionary.el][GitHub Youdao]]
 #+BEGIN_SRC emacs-lisp
   (use-package youdao-dictionary
     :init
@@ -1166,81 +929,15 @@ empty-defun-braces))
     (("C-c y t" . youdao-dictionary-search-at-point)
      ("C-c y s" . youdao-dictionary-play-voice-at-point)))
 #+END_SRC
-*** function-args
-- Home page: [[https://github.com/abo-abo/function-args][github]]
-#+BEGIN_SRC emacs-lisp
-  ;; (use-package function-args
-  ;;   :init
-  ;;   (fa-config-default))
-#+END_SRC
-*** stickfunc
-- https://github.com/tuhdo/semantic-stickyfunc-enhance#features
-#+BEGIN_SRC emacs-lisp
-  (use-package stickyfunc-enhance
-    :pin melpa
-    :init
-    (add-to-list 'semantic-default-submodes 'global-semantic-stickyfunc-mode)
-    (semantic-mode 1))
-#+END_SRC
-*** helm-swoop
-- Home page: [[https://github.com/ShingoFukuyama/helm-swoop][github]]
-#+BEGIN_SRC emacs-lisp
-  (use-package helm-swoop)
-  (require 'helm-swoop)
-  ;; Change the keybinds to whatever you like :)
-  (global-set-key (kbd "M-i") 'helm-swoop)
-  (global-set-key (kbd "M-I") 'helm-swoop-back-to-last-point)
-  (global-set-key (kbd "C-c M-i") 'helm-multi-swoop)
-  (global-set-key (kbd "C-x M-i") 'helm-multi-swoop-all)
 
-  ;; When doing isearch, hand the word over to helm-swoop
-  (define-key isearch-mode-map (kbd "M-i") 'helm-swoop-from-isearch)
-  ;; From helm-swoop to helm-multi-swoop-all
-  (define-key helm-swoop-map (kbd "M-i") 'helm-multi-swoop-all-from-helm-swoop)
-  ;; When doing evil-search, hand the word over to helm-swoop
-  ;; (define-key evil-motion-state-map (kbd "M-i") 'helm-swoop-from-evil-search)
-
-  ;; Instead of helm-multi-swoop-all, you can also use helm-multi-swoop-current-mode
-  (define-key helm-swoop-map (kbd "M-m") 'helm-multi-swoop-current-mode-from-helm-swoop)
-
-  ;; Move up and down like isearch
-  (define-key helm-swoop-map (kbd "C-r") 'helm-previous-line)
-  (define-key helm-swoop-map (kbd "C-s") 'helm-next-line)
-  (define-key helm-multi-swoop-map (kbd "C-r") 'helm-previous-line)
-  (define-key helm-multi-swoop-map (kbd "C-s") 'helm-next-line)
-
-  ;; Save buffer when helm-multi-swoop-edit complete
-  (setq helm-multi-swoop-edit-save t)
-
-  ;; If this value is t, split window inside the current window
-  (setq helm-swoop-split-with-multiple-windows nil)
-
-  ;; Split direcion. 'split-window-vertically or 'split-window-horizontally
-  (setq helm-swoop-split-direction 'split-window-vertically)
-
-  ;; If nil, you can slightly boost invoke speed in exchange for text color
-  (setq helm-swoop-speed-or-color nil)
-
-  ;; ;; Go to the opposite side of line from the end or beginning of line
-  (setq helm-swoop-move-to-line-cycle t)
-
-  ;; Optional face for line numbers
-  ;; Face name is `helm-swoop-line-number-face`
-  (setq helm-swoop-use-line-number-face t)
-
-  ;; If you prefer fuzzy matching
-  (setq helm-swoop-use-fuzzy-match t)
-
-  ;; If you would like to use migemo, enable helm's migemo feature
-  ;; (helm-migemo-mode 1)
-#+END_SRC
+** TODO sdcv
 * MultiMedia
 ** Emms
 - Homepage: [[https://www.gnu.org/software/emms/][gnu emms]]
 - Download players under windows: [[https://www.mpg123.de/download/win64][mpg123 win64]], [[https://sourceforge.net/projects/mplayerwin/][mplayer]]
 #+BEGIN_SRC emacs-lisp
   (add-to-list 'exec-path "c:/mplayer")
-  (add-to-list 'exec-path "c:/Program Files (x86)/VideoLAN/VLC/")
+  ;;(add-to-list 'exec-path "c:/Program Files (x86)/VideoLAN/VLC/")
 
   (defun y:emms-play-default()
       (interactive)
@@ -1330,17 +1027,4 @@ empty-defun-braces))
   )
 
   (eval-after-load 'view-mode-hook 'y:view-mode-func)
-#+END_SRC
-* Evil
-- Homepage: [[https://github.com/emacs-evil/evil][github]]
-#+BEGIN_SRC emacs-lisp
-  (use-package evil
-    )
-#+END_SRC
-
-#+BEGIN_SRC emacs-lisp
-
-  (when (string-equal system-type "cygwin")
-    (add-to-list 'org-file-apps
-                 '("\\.x?html?\\'" . "/bin/chrome-cygwin.sh %s")))
 #+END_SRC

@@ -11,28 +11,34 @@
 
 (require 'package)
 
-;; Emacs archives site is isolated by GFW, use mirror site
-;; (setq package-archives
-;;       '(("melpa-stable" . "https://stable.melpa.org/packages/")
-;;         ("melpa" . "https://melpa.org/packages/")
-;;         ("gnu" . "https://elpa.gnu.org/packages/")
-;; 	("org" . "http://orgmode.org/elpa/")
-;;         ;;("marmalade" . "https://marmalade-repo.org/packages/")
-;; 	))
-;; (setq package-archives
-;;       '(("gnu" . "https://elpa.gnu.org/packages/")
-;;         ("marmalade" . "https://marmalade-repo.org/packages/")
-;;         ("melpa" . "https://melpa.org/packages/")))
-;; emacs-china crashed or stopped ? replace with tsinghua mirror
-;;(setq package-archives
-;;      '(("gnu" . "http://elpa.emacs-china.org/gnu/")
-;;        ("melpa" . "http://elpa.emacs-china.org/melpa/")))
-(setq package-archives
-      '(("gnu"   . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
-        ("org"   . "http://mirrors.tuna.tsinghua.edu.cn/elpa/org/")
-        ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
-        ("melpa-stable" .
-	           "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa-stable/")))
+(defun y:set-package-archive-proxy()
+  "Use melpa.org archives for proxy ready"
+  (interactive)
+  (when (and (getenv "HTTPS_PROXY") (getenv "HTTP_PROXY"))
+    (message "Http(s) proxy configured, use official sites")
+    (setq package-archives
+          '(("melpa-stable" . "https://stable.melpa.org/packages/")
+            ("melpa" . "https://melpa.org/packages/")
+            ("gnu" . "https://elpa.gnu.org/packages/")
+	    ("org" . "http://orgmode.org/elpa/")
+            ("marmalade" . "https://marmalade-repo.org/packages/")))))
+
+(defun y:set-package-archive-mirror()
+  "Use melpa.org archives for proxy ready"
+  (interactive)
+  (unless (or (getenv "HTTPS_PROXY") (getenv "HTTP_PROXY"))
+    (message "No proxy configured, use tsinghua mirror")
+    (setq package-archives
+          '(("gnu"   . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
+            ("org"   . "http://mirrors.tuna.tsinghua.edu.cn/elpa/org/")
+            ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
+            ("melpa-stable" .
+	     "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa-stable/")))))
+
+;; Emacs archives site is isolated by GFW, use mirror site if no proxy
+(or (y:set-package-archive-proxy)
+    (y:set-package-archive-mirror))
+
 (package-initialize)
 
 ;; FIXME: First starting emacs will cause an error for no use-package-*
