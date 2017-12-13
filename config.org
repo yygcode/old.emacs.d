@@ -251,6 +251,11 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     (find-file "~/org/i/meeting.org"))
   (global-set-key (kbd "C-c q i") 'y:open-file-imeeting)
 
+  (defun y:open-file-english-words()
+    (interactive)
+    (find-file "~/org/h/english-words.org"))
+  (global-set-key (kbd "C-c q i") 'y:open-file-imeeting)
+
   (defun y:open-file-favorite-sites()
     (interactive)
     (find-file "~/org/h/favorite-sites.org"))
@@ -482,7 +487,9 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 #+END_SRC
 
 *** cedet
-- Homepage: [[http://cedet.sourceforge.net/][Cedet SourceForge]]
+- Homepage :: [[http://cedet.sourceforge.net/][Cedet SourceForge]]
+- A Gentle introduction to CEDET ::
+  [[http://alexott.net/en/writings/emacs-devenv/EmacsCedet.html]]
 #+BEGIN_SRC emacs-lisp
   (defun y:ac-source-semantic()
     (add-to-list 'ac-sources 'y:ac-source-semantic))
@@ -490,14 +497,39 @@ See notes [[http://ycode.org/emacs.html]] for more details.
   (use-package cedet
     :init
     (global-ede-mode 1)
-    (global-semantic-idle-scheduler-mode 1))
+    (global-semantic-idle-scheduler-mode 1)
+    (add-hook 'c-mode-hook 'semantic-default-c-setup)
+    (add-hook 'c++-mode-hook 'semantic-default-c-setup)
+    :config
+    (require 'semantic)
+    (require 'semantic/ia)
+    (require 'semantic/bovine/gcc)
+    (require 'semantic/analyze)
+    (provide 'semantic-analyze)
+    (provide 'semantic-ctxt)
+    (provide 'semanticdb)
+    (provide 'semanticdb-find)
+    (provide 'semanticdb-mode)
+    (provide 'semantic-load)
+    (semantic-mode 1)
+    (setq-mode-local c-mode semanticdb-find-default-throttle
+                   '(project unloaded system recursive)))
 #+END_SRC
 
 *** TODO ecb
+- Homepage: [[http://ecb.sourceforge.net/][Ecb Sourceforge]]
+- Docs: [[http://ecb.sourceforge.net/docs/][Ecb Sourceforge Doc]]
 - depends on semantic
 - https://stackoverflow.com/questions/3134026/emacs-23-2-with-ecb-2-40-file-error-cannot-open-load-file-semantic-ctxt
-#+BEGIN_SRC emacs-lisp 
+#+BEGIN_SRC emacs-lisp
+  ;; try latest version if exist
+  (setq y:ecb '"~/.emacs.d/elpa/ecb-20171213")
+  (when (file-exists-p y:ecb)
+    (add-to-list 'load-path y:ecb))
+
   (use-package ecb)
+  (use-package ecb-autoloads
+    :ensure ecb)
 #+END_SRC
 *** highlight-symbol
 - Homepage: [[https://github.com/nschum/highlight-symbol.el][GitHub]]
