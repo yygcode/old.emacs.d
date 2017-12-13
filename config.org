@@ -254,7 +254,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
   (defun y:open-file-english-words()
     (interactive)
     (find-file "~/org/h/english-words.org"))
-  (global-set-key (kbd "C-c q i") 'y:open-file-imeeting)
+  (global-set-key (kbd "C-c q e") 'y:open-file-english-words)
 
   (defun y:open-file-favorite-sites()
     (interactive)
