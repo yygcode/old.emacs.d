@@ -290,10 +290,11 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 ** Bullets
 - Homepage: [[https://github.com/sabof/org-bullets][GitHub Org Bullets]]
 #+BEGIN_SRC emacs-lisp
-  (use-package org-bullets
-    :init
-    (add-hook 'org-mode-hook
-              (lambda()(org-bullets-mode 1))))
+  (when (find-font (font-spec :name "Source Code Pro" :size 15))
+    (use-package org-bullets
+      :init
+      (add-hook 'org-mode-hook
+                (lambda()(org-bullets-mode 1)))))
 #+END_SRC
 
 ** Org literal programming(Source Code Block)
