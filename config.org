@@ -96,14 +96,14 @@ See notes [[http://ycode.org/emacs.html]] for more details.
    inhibit-splash-screen t
    ;; customize scratch message
    initial-scratch-message (concat ";; Happy hacking "
-                                   (or user-login-name "<yanyg>")
-                                   " - Emacs loves you!\n\n"))
+				   (or user-login-name "<yanyg>")
+				   " - Emacs loves you!\n\n"))
 
   ;; init fullscreen
   (when (display-graphic-p)
     (add-hook 'after-init-hook
-              (lambda()(interactive)
-                (set-frame-parameter nil 'fullscreen 'fullboth))))
+	      (lambda()(interactive)
+		(set-frame-parameter nil 'fullscreen 'fullboth))))
 
   ;; hide menu, tool, scroll for maximized usable screen
   (menu-bar-mode -1)
@@ -156,7 +156,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
   + If unset CJK fonts, Emacs runs very slow when the buffer has CJK characters
 #+BEGIN_SRC emacs-lisp
   ;; fallback fonts
-  (set-fontset-font "fontset-default" nil 
+  (set-fontset-font "fontset-default" nil
 		    (font-spec :name "Lucida Sans" :size 15))
   (when (find-font (font-spec :name "Source Code Pro" :size 15))
     (set-frame-font (font-spec :name "Source Code Pro" :size 15) nil t)
@@ -196,7 +196,10 @@ See notes [[http://ycode.org/emacs.html]] for more details.
   (setq default-directory "~/")
 
   (use-package disable-mouse
-    :init(global-disable-mouse-mode)
+    :init
+    ;;(global-disable-mouse-mode)
+    (dolist (hook '(prog-mode-hook text-mode-hook))
+      (add-hook hook #'whitespace-mode))
     :diminish global-disable-mouse-mode)
 
   ;; windows too slow to open history files
@@ -241,25 +244,49 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 * Helper routes
 ** quickly open files
 #+BEGIN_SRC emacs-lisp
-  (defun y:open-file-config()
-    (interactive)
-    (find-file "~/.emacs.d/config.org"))
-  (global-set-key (kbd "C-c q c") 'y:open-file-config)
+   (defun y:buffer-scratch()
+     (interactive)
+     (switch-to-buffer "*scratch*"))
+   (global-set-key (kbd "C-c q s") 'y:buffer-scratch)
 
-  (defun y:open-file-imeeting()
-    (interactive)
-    (find-file "~/org/i/meeting.org"))
-  (global-set-key (kbd "C-c q i") 'y:open-file-imeeting)
+   (global-set-key (kbd "C-c e") 'eshell)
 
-  (defun y:open-file-english-words()
-    (interactive)
-    (find-file "~/org/h/english-words.org"))
-  (global-set-key (kbd "C-c q e") 'y:open-file-english-words)
+   (defun y:open-file-config()
+     (interactive)
+     (find-file "~/.emacs.d/config.org"))
+   (global-set-key (kbd "C-c q c") 'y:open-file-config)
 
-  (defun y:open-file-favorite-sites()
-    (interactive)
-    (find-file "~/org/h/favorite-sites.org"))
-  (global-set-key (kbd "C-c q w") 'y:open-file-favorite-sites)
+  (defun y:find-books-directory()
+     (interactive)
+     (helm-find-files-1 "~/books/"))
+   (global-set-key (kbd "C-c q b") 'y:find-books-directory)
+
+   (defun y:find-file-org-directory()
+     "Find-file default with org directory"
+     (interactive)
+     (counsel-find-file "~/org/"))
+   (global-set-key (kbd "C-c q o") 'y:find-file-org-directory)
+
+   (defun y:find-file-homepage-directory()
+     "Find-file default with org directory"
+     (interactive)
+     (counsel-find-file "~/org/h/"))
+   (global-set-key (kbd "C-c q h") 'y:find-file-homepage-directory)
+
+   (defun y:open-file-imeeting()
+     (interactive)
+     (find-file "~/org/i/meeting.org"))
+   (global-set-key (kbd "C-c q i") 'y:open-file-imeeting)
+
+   (defun y:open-file-english-words()
+     (interactive)
+     (find-file "~/org/h/english-words.org"))
+   (global-set-key (kbd "C-c q e") 'y:open-file-english-words)
+
+   (defun y:open-file-favorite-sites()
+     (interactive)
+     (find-file "~/org/h/favorite-sites.org"))
+   (global-set-key (kbd "C-c q w") 'y:open-file-favorite-sites)
 #+END_SRC
 
 * Org Mode
@@ -276,8 +303,8 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     (progn
       (setq org-directory "~/org")
       (setq org-agenda-files (list org-directory
-                                   (concat org-directory "/i")
-                                   (concat org-directory "/p")))
+				   (concat org-directory "/i")
+				   (concat org-directory "/p")))
       (setq org-default-notes-file (concat org-directory "/notes.org"))
       (setq system-time-locale "C"))
     :bind
@@ -294,7 +321,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     (use-package org-bullets
       :init
       (add-hook 'org-mode-hook
-                (lambda()(org-bullets-mode 1)))))
+		(lambda()(org-bullets-mode 1)))))
 #+END_SRC
 
 ** Org literal programming(Source Code Block)
@@ -308,7 +335,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 
   (defun y:org-confirm-babel-evaluate(lang body)
     (not (or (string= lang "ditaa")
-             (string= lang "dot"))))
+	     (string= lang "dot"))))
   (setq org-confirm-babel-evaluate 'y:org-confirm-babel-evaluate)
 
   ;; enable image preview
@@ -446,17 +473,17 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     (setq lines (* arg 10))
     (with-selected-window (other-window-for-scrolling)
       (if (string-equal major-mode "pdf-view-mode")
-          (progn
-            ;;            (setq lines (or lines 1))
-            (let* ((count arg)
-                   v)
-              (or (< 0 count) (setq count (- count)))
-              (dotimes (v count)
-                (if (< lines 0)
-                    (pdf-view-previous-line-or-previous-page 1)
-                  (pdf-view-next-line-or-next-page 1)))))
-        (message "lines %d" lines)
-        (scroll-up-line lines))))
+	  (progn
+	    ;;            (setq lines (or lines 1))
+	    (let* ((count arg)
+		   v)
+	      (or (< 0 count) (setq count (- count)))
+	      (dotimes (v count)
+		(if (< lines 0)
+		    (pdf-view-previous-line-or-previous-page 1)
+		  (pdf-view-next-line-or-next-page 1)))))
+	(message "lines %d" lines)
+	(scroll-up-line lines))))
 
   (defun y:scroll-other-window-opposite(&optional lines)
     (interactive "p")
@@ -468,11 +495,31 @@ See notes [[http://ycode.org/emacs.html]] for more details.
   (use-package pdf-tools
     :init
     (setq doc-view-continuous t)
+    ;;(add-to-list 'org-file-apps
+    ;;             '("\\.pdf\\'" . default))
+    ;; Ensure turn off linum mode for known bugs(choke)
     (pdf-tools-install :no-query-p)
+    (setq-default pdf-view-display-size 'fit-height)
+    (setq pdf-view-midnight-colors '("#F8F8F2" . "#272822"))
+    (define-key pdf-view-mode-map (kbd "C-s") 'isearch-forward)
+    (add-hook 'pdf-view-mode-hook '(lambda()
+				     (setq display-line-numbers nil)
+				     (pdf-view-midnight-minor-mode)
+				     (pdf-view-fit-page-to-window)))
     :diminish pdf-view-mode
     :bind
     (("C-c n" . y:scroll-other-window)
      ("C-c p" . y:scroll-other-window-opposite)))
+
+  ;; use pdf-view for org-links
+  ;; (use-package org-pdfview
+  ;;   :init
+  ;;   (add-to-list 'org-file-apps
+  ;;                '("\\.pdf\\'" . (lambda (file link) (org-pdfview-open link)))))
+  ;;(add-to-list 'load-path '"~/.emacs.d/elpa/org-pdfview")
+  ;;(require 'org-pdfview)
+  ;;(add-to-list 'org-file-apps
+  ;;             '("\\.pdf\\'" . (lambda (file link) (org-pdfview-open link))))
 #+END_SRC
 * Development Enviroments
 ** Common
@@ -514,7 +561,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     (provide 'semantic-load)
     (semantic-mode 1)
     (setq-mode-local c-mode semanticdb-find-default-throttle
-                   '(project unloaded system recursive)))
+		   '(project unloaded system recursive)))
 #+END_SRC
 
 *** TODO ecb
@@ -561,6 +608,11 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     :bind
     (("C-;" . iedit-mode)))
 #+END_SRC
+*** line number
+#+BEGIN_SRC emacs-lisp
+  (global-display-line-numbers-mode 1)
+#+END_SRC
+
 *** smartparens
 - ref [[https://ebzzry.io/en/emacs-pairs/][emacs-pairs]], [[https://github.com/Fuco1/smartparens][smartparens github]], and [[https://github.com/Fuco1/smartparens/wiki][wiki]]
 #+BEGIN_SRC emacs-lisp
@@ -600,9 +652,9 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     :diminish ggtags-mode
     :init
     (add-hook 'c-mode-common-hook
-              (lambda()
-                (when (derived-mode-p 'c-mode 'c++-mode 'java-mode 'asm-mode)
-                  (ggtags-mode 1)))))
+	      (lambda()
+		(when (derived-mode-p 'c-mode 'c++-mode 'java-mode 'asm-mode)
+		  (ggtags-mode 1)))))
   (require 'ggtags)
   (define-key ggtags-mode-map (kbd "C-c g s") 'ggtags-find-other-symbol)
   (define-key ggtags-mode-map (kbd "C-c g h") 'ggtags-view-tag-history)
@@ -635,6 +687,16 @@ See notes [[http://ycode.org/emacs.html]] for more details.
   ;;    ("M-;" . helm-gtags-find-rtag)))
 #+END_SRC
 
+*** stickfunc
+- HomePage: [[https://github.com/tuhdo/semantic-stickyfunc-enhance#features][GitHub StickFunc Enhance]]
+#+BEGIN_SRC emacs-lisp
+  (use-package stickyfunc-enhance
+    :pin melpa
+    :init
+    (add-to-list 'semantic-default-submodes 'global-semantic-stickyfunc-mode)
+    (semantic-mode 1))
+#+END_SRC
+
 ** C/C++
 *** auto complete C headers
 - Homepage: [[https://github.com/mooz/auto-complete-c-headers][GitHub Auto-complete-C-headers]]
@@ -643,16 +705,16 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 #+BEGIN_SRC emacs-lisp
   (when (string= system-type "windows-nt")
     (setq y:ac-c-headers
-          '("F:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/7.2.0/include"
-            "F:/msys64/mingw64/include"
-            "F:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/7.2.0/include-fixed"
-            "F:/msys64/mingw64/x86_64-w64-mingw32/include")))
+	  '("F:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/7.2.0/include"
+	    "F:/msys64/mingw64/include"
+	    "F:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/7.2.0/include-fixed"
+	    "F:/msys64/mingw64/x86_64-w64-mingw32/include")))
 
   (defun y:ac-c-headers-init()
     (add-to-list 'ac-sources 'ac-source-c-headers)
     ;;(add-to-list 'achead:include-directories '"F:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/7.2.0/include")
     (setq achead:include-directories (append y:ac-c-headers
-                                             achead:include-directories))
+					     achead:include-directories))
     )
 
   (use-package auto-complete-c-headers
@@ -735,7 +797,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
        (objc-method-args-cont . c-lineup-ObjC-method-args)
        (objc-method-call-cont c-lineup-ObjC-method-call-colons c-lineup-ObjC-method-call +)
        (objc-method-intro .
-                          [0])
+			  [0])
        (statement-case-intro . +)
        (statement-case-open . +)
        (stream-op . c-lineup-streamop)
@@ -816,7 +878,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
        (objc-method-args-cont . c-lineup-ObjC-method-args)
        (objc-method-call-cont c-lineup-ObjC-method-call-colons c-lineup-ObjC-method-call +)
        (objc-method-intro .
-                          [0])
+			  [0])
        (statement-case-intro . +)
        (statement-case-open . 0)
        (stream-op . c-lineup-streamop)
@@ -831,13 +893,13 @@ See notes [[http://ycode.org/emacs.html]] for more details.
   (defun y:c-style-hook()
     "Config c style depends on file pathname"
     (if (and (buffer-file-name)
-             (string-match "/mcs/" (buffer-file-name)))
-        (progn
-          (c-set-style "y:c-mcs")
-          (setq indent-tabs-mode nil))
+	     (string-match "/mcs/" (buffer-file-name)))
+	(progn
+	  (c-set-style "y:c-mcs")
+	  (setq indent-tabs-mode nil))
       (progn
-        (c-set-style  "y:c-common")
-        (setq indent-tabs-mode t))
+	(c-set-style  "y:c-common")
+	(setq indent-tabs-mode t))
       ))
   (add-hook 'c-mode-hook 'y:c-style-hook)
 #+END_SRC
@@ -856,28 +918,28 @@ See notes [[http://ycode.org/emacs.html]] for more details.
       ;; Use Company for completion
       (bind-key [remap completion-at-point] #'company-complete)
       (setq company-tooltip-align-annotations t
-            ;; Easy navigation to candidates with M-<n>
-            company-show-numbers t)
+	    ;; Easy navigation to candidates with M-<n>
+	    company-show-numbers t)
       (setq company-dabbrev-downcase nil)
       (setq company-minimum-prefix-length 3)
-      (setq company-idle-delay 0.5)
+      (setq company-idle-delay 5)
       (setq company-ispell-available t)
 
       (defun text-mode-hook-setup ()
-        (make-local-variable 'company-backends)
-        (add-to-list 'company-backends 'company-ispell)
-        (setq company-ispell-dictionary
-              (expand-file-name "~/.emacs.d/misc/english-words.txt")))
+	(make-local-variable 'company-backends)
+	(add-to-list 'company-backends 'company-ispell)
+	(setq company-ispell-dictionary
+	      (expand-file-name "~/.emacs.d/misc/english-words.txt")))
       (add-hook 'text-mode-hook 'text-mode-hook-setup)
       (defun toggle-company-ispell ()
-        (interactive)
-        (cond
-         ((memq 'company-ispell company-backends)
-          (setq company-backends (delete 'company-ispell company-backends))
-          (message "company-ispell disabled"))
-         (t
-          (add-to-list 'company-backends 'company-ispell)
-          (message "company-ispell enabled!")))))
+	(interactive)
+	(cond
+	 ((memq 'company-ispell company-backends)
+	  (setq company-backends (delete 'company-ispell company-backends))
+	  (message "company-ispell disabled"))
+	 (t
+	  (add-to-list 'company-backends 'company-ispell)
+	  (message "company-ispell enabled!")))))
     ;;:bind
     ;;("M-;" . company-complete-common)
     )
@@ -888,18 +950,19 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 - WIKI: [[https://github.com/emacs-helm/helm/wiki]]
 - Bug: need to set local variable current-input-method for [[https://github.com/emacs-helm/helm/issues/797][issue 797]]
 #+BEGIN_SRC emacs-lisp
-  (use-package helm-config
-    :ensure helm
-    :config
-    ;; always use english input in helm minibuffer
-    ;; use C-\ (toggle-input-method) to toggle to other(e.g. pyim)
-    (helm-set-local-variable 'current-input-method nil)
-    :bind
-    ("M-x" . helm-M-x)
-    ("C-x b" . helm-mini))
+    (use-package helm-config
+      :ensure helm
+      :config
+      ;; always use english input in helm minibuffer
+      ;; use C-\ (toggle-input-method) to toggle to other(e.g. pyim)
+      (helm-set-local-variable 'current-input-method nil)
+      :bind
+      ;;("C-x C-f" . helm-find-files)
+      ("M-x" . helm-M-x)
+      ("C-x b" . helm-mini))
 
-  ;;(use-package helm-core)
-  ;;(add-to-list 'load-path "~/.emacs.d/elpa/helm-core-20170622.1355")
+    ;;(use-package helm-core)
+    ;;(add-to-list 'load-path "~/.emacs.d/elpa/helm-core-20170622.1355")
 #+END_SRC
 
 ** hungry delete
@@ -951,6 +1014,19 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     :bind-keymap ("C-c s" . google-this-mode-submap))
 #+END_SRC
 
+** whitespace
+#+BEGIN_SRC emacs-lisp
+  (use-package whitespace
+    :init
+    (dolist (hook '(prog-mode-hook text-mode-hook))
+      (add-hook hook #'whitespace-mode))
+    (add-hook 'before-save-hook #'whitespace-cleanup)
+    :config
+    (setq whitespace-line-column 80) ;; limit line length
+    (setq whitespace-style '(face empty lines-tail tabs trailing
+				  indentation::tab)))
+#+END_SRC
+
 * Dictionary
 ** youdao
 - Homepage: [[https://github.com/xuchunyang/youdao-dictionary.el][GitHub Youdao]]
@@ -990,11 +1066,11 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 
       (require 'emms-player-mplayer)
       (define-emms-simple-player mplayer '(file url)
-        (regexp-opt '(".ogg" ".mp3" ".wav" ".mpg" ".mpeg" ".wmv" ".wma"
-                      ".mov" ".avi" ".divx" ".ogm" ".asf" ".mkv" ".rm" ".rmvb"
-                      ".mp4" ".flac" ".vob" ".m4a" ".flv" ".ogv" ".pls"
-                      "http://" "mms://"))
-        "mplayer" "-slave" "-quiet" "-really-quiet" "-fullscreen")
+	(regexp-opt '(".ogg" ".mp3" ".wav" ".mpg" ".mpeg" ".wmv" ".wma"
+		      ".mov" ".avi" ".divx" ".ogm" ".asf" ".mkv" ".rm" ".rmvb"
+		      ".mp4" ".flac" ".vob" ".m4a" ".flv" ".ogv" ".pls"
+		      "http://" "mms://"))
+	"mplayer" "-slave" "-quiet" "-really-quiet" "-fullscreen")
 
       ;; FIXME: configure VLC for Video
       ;; (define-emms-simple-player vlc '(file url)
@@ -1024,31 +1100,31 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     :config
     (progn
       (setq w3m-coding-system 'utf-8
-            w3m-file-coding-system 'utf-8
-            w3m-file-name-coding-system 'utf-8
-            w3m-input-coding-system 'utf-8
-            w3m-output-coding-system 'utf-8
-            ;; emacs-w3m will test the ImageMagick support for png32
-            ;; and create files named "png32:-" everywhere
-            w3m-imagick-convert-program nil
-            w3m-terminal-coding-system 'utf-8
-            w3m-use-cookies t
-            w3m-cookie-accept-bad-cookies t
-            w3m-home-page "http://www.google.com.hk/en"
-            w3m-command-arguments       '("-F" "-cookie")
-            w3m-mailto-url-function     'compose-mail
-            browse-url-browser-function 'w3m
-            ;; use shr to view html mail, but if libxml NOT available
-            ;; use w3m isntead. That's macs 24.3+ default logic
-            mm-text-html-renderer 'w3m ; I prefer w3m
-            w3m-use-toolbar t
-            ;; show images in the browser
-            setq w3m-default-display-inline-images t
-            ;; w3m-use-tab     nil
-            w3m-confirm-leaving-secure-page nil
-            w3m-search-default-engine "g"
-            w3m-view-this-url-new-session-in-background t
-            w3m-key-binding 'info)))
+	    w3m-file-coding-system 'utf-8
+	    w3m-file-name-coding-system 'utf-8
+	    w3m-input-coding-system 'utf-8
+	    w3m-output-coding-system 'utf-8
+	    ;; emacs-w3m will test the ImageMagick support for png32
+	    ;; and create files named "png32:-" everywhere
+	    w3m-imagick-convert-program nil
+	    w3m-terminal-coding-system 'utf-8
+	    w3m-use-cookies t
+	    w3m-cookie-accept-bad-cookies t
+	    w3m-home-page "http://www.google.com.hk/en"
+	    w3m-command-arguments       '("-F" "-cookie")
+	    w3m-mailto-url-function     'compose-mail
+	    browse-url-browser-function 'w3m
+	    ;; use shr to view html mail, but if libxml NOT available
+	    ;; use w3m isntead. That's macs 24.3+ default logic
+	    mm-text-html-renderer 'w3m ; I prefer w3m
+	    w3m-use-toolbar t
+	    ;; show images in the browser
+	    w3m-default-display-inline-images t
+	    ;; w3m-use-tab     nil
+	    w3m-confirm-leaving-secure-page nil
+	    w3m-search-default-engine "g"
+	    w3m-view-this-url-new-session-in-background t
+	    w3m-key-binding 'info)))
 
   (defun y:view-mode-func()
     (message "Set to view mode func")
@@ -1061,3 +1137,5 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 
   (eval-after-load 'view-mode-hook 'y:view-mode-func)
 #+END_SRC
+* Reference
+- use-package :: [[https://github.com/jwiegley/use-package][HomePage]]\\
