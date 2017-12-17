@@ -285,7 +285,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 
    (defun y:open-file-favorite-sites()
      (interactive)
-     (find-file "~/org/h/favorite-sites.org"))
+     (find-file "~/org/h/sites-map.org"))
    (global-set-key (kbd "C-c q w") 'y:open-file-favorite-sites)
 #+END_SRC
 
@@ -422,7 +422,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     ;; http://orgmode.org/worg/org-tutorials/org-publish-html-tutorial.html
     (setq org-publish-project-alist
 	  '(("pages"
-	     :base-directory "~/hp/src/"
+	     :base-directory "~/org/h/"
 	     :publishing-directory "~/hp/"
 	     :recursive nil
 	     :with-author t
@@ -610,6 +610,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 #+END_SRC
 *** line number
 #+BEGIN_SRC emacs-lisp
+  (setq-default display-line-numbers-width 4)
   (global-display-line-numbers-mode 1)
 #+END_SRC
 
@@ -1094,6 +1095,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     )
 #+END_SRC
 * Browser
+- emacs-w3m: [[https://github.com/ecbrown/emacs-w3m][GitHub emacs-w3m]]
 #+BEGIN_SRC emacs-lisp
   (use-package w3m
     :pin melpa
@@ -1136,6 +1138,8 @@ See notes [[http://ycode.org/emacs.html]] for more details.
   )
 
   (eval-after-load 'view-mode-hook 'y:view-mode-func)
+
+  ;;(use-package emacs-w3m)
 #+END_SRC
 * Reference
 - use-package :: [[https://github.com/jwiegley/use-package][HomePage]]\\
