@@ -611,7 +611,9 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 *** line number
 #+BEGIN_SRC emacs-lisp
   (setq-default display-line-numbers-width 4)
-  (global-display-line-numbers-mode 1)
+  (when (fboundp 'global-display-line-numbers-mode)
+    (global-display-line-numbers-mode 1))
+
 #+END_SRC
 
 *** smartparens
