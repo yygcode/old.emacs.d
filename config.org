@@ -250,6 +250,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
    (global-set-key (kbd "C-c q s") 'y:buffer-scratch)
 
    (global-set-key (kbd "C-c e") 'eshell)
+   (global-set-key (kbd "C-c w") 'eww)
 
    (defun y:open-file-config()
      (interactive)
@@ -377,7 +378,8 @@ See notes [[http://ycode.org/emacs.html]] for more details.
   (defun y:org-publish-setup()
     "Org publish setup"
     ;; http://orgmode.org/manual/Publishing-options.html
-    (setq org-export-with-sub-superscripts nil)
+    ;;(setq org-export-with-sub-superscripts nil)
+    (setq org-export-with-sub-superscripts '{})
     (setq org-export-with-timestamps nil)
     (setq org-export-author "yanyg")
     (setq org-export-with-creator nil)
@@ -907,6 +909,11 @@ See notes [[http://ycode.org/emacs.html]] for more details.
   (add-hook 'c-mode-hook 'y:c-style-hook)
 #+END_SRC
 ** Python
+** Project
+#+BEGIN_SRC emacs-lisp
+  (setq project-linux-build-directory-default "~/gnu/linux-stable")
+  (setq project-linux-architecture-default "x86")
+#+END_SRC
 * Misc Packages
 ** company
 - Homepage: [[https://company-mode.github.io/][Company Mode in GitHub IO]]
