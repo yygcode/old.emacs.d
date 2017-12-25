@@ -708,12 +708,13 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 - include dir in mingw: =gcc -v -c x.c=
 - include dir in linux/cygwin: =gcc -xc++ -E -v -=
 #+BEGIN_SRC emacs-lisp
-  (when (string= system-type "windows-nt")
+  (if (string= system-type "windows-nt")
     (setq y:ac-c-headers
 	  '("F:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/7.2.0/include"
 	    "F:/msys64/mingw64/include"
 	    "F:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/7.2.0/include-fixed"
-	    "F:/msys64/mingw64/x86_64-w64-mingw32/include")))
+	    "F:/msys64/mingw64/x86_64-w64-mingw32/include"))
+    (setq y:ac-c-headers nil))
 
   (defun y:ac-c-headers-init()
     (add-to-list 'ac-sources 'ac-source-c-headers)
@@ -911,7 +912,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 ** Python
 ** Project
 #+BEGIN_SRC emacs-lisp
-  (setq project-linux-build-directory-default "~/gnu/linux-stable")
+  (setq project-linux-build-directory-default "~/gnu/linux-4.12")
   (setq project-linux-architecture-default "x86")
 #+END_SRC
 * Misc Packages
