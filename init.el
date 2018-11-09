@@ -1,44 +1,90 @@
-;;; init.el --- emacs config entry
-;;
+;;; ~/.emacs.d/init.el --- Emacs Initialization/Customization File
+
 ;; Copyright (C) 2017 yanyg<yygcode@gmail.com>
-;;
+
 ;; Author: yanyg<yygcode@gmail.com>
-;; Homepage: http://ycode.org
+;; Maintainer: yanyg<yygcode@gmail.com>
+;; Keyword: Emacs Initialization Customization Configuration
+;; URL: http://ycode.org
 
 ;;; Commentary:
 
+;; Emacs base customization which includes package and org babel initialize.
+;; Refer to ~/.emacs.d/config.org for deeply customization.
+
 ;;; Code:
 
+;; package - Simple package system for Emacs. Built-in
 (require 'package)
 
-(defun y:set-package-archive-proxy()
-  "Use melpa.org archives for proxy ready"
-  (interactive)
-  (when (and (getenv "HTTPS_PROXY") (getenv "HTTP_PROXY"))
-    (message "Http(s) proxy configured, use official sites")
-    (setq package-archives
-          '(("melpa-stable" . "https://stable.melpa.org/packages/")
-            ("melpa" . "https://melpa.org/packages/")
-            ("gnu" . "https://elpa.gnu.org/packages/")
-	    ("org" . "http://orgmode.org/elpa/")
-            ("marmalade" . "https://marmalade-repo.org/packages/")))))
-
-(defun y:set-package-archive-mirror()
-  "Use melpa.org archives for proxy ready"
-  (interactive)
-  (unless (or (getenv "HTTPS_PROXY") (getenv "HTTP_PROXY"))
-    (message "No proxy configured, use tsinghua mirror")
-    (setq package-archives
-          '(("gnu"   . "http://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
-            ("org"   . "http://mirrors.tuna.tsinghua.edu.cn/elpa/org/")
-            ("melpa" . "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
-            ("melpa-stable" .
-	     "http://mirrors.tuna.tsinghua.edu.cn/elpa/melpa-stable/")))))
+;;; proxy and package-archives setting
 
 ;; Emacs archives site is isolated by GFW, use mirror site if no proxy
-(or (y:set-package-archive-proxy)
-    (y:set-package-archive-mirror))
+;; Change: Always use mirror for performance
 
+(defun y:env-set-if-unset-or-nil-val (env val)
+  "Set enviroment ENV to VAL if ENV unset or nil."
+  (interactive)
+  (when (and (not (getenv env)) val)
+    (setenv env val)))
+
+(defun y:env-set-if-unset-or-nil-env (env oldenv)
+  "Set enviroment ENV to OLDENV if ENV unset or nil."
+  (interactive)
+  (y:env-set-if-unset-or-nil-val env (getenv oldenv)))
+
+(defun y:env-set-if-either-set (env1 env2)
+  "Set enviroment ENV1/ENV2 to another if one is nil and another is non-nil."
+  (interactive)
+  (or (getenv env1) (y:env-set-if-unset-or-nil-env env1 env2))
+  (or (getenv env2) (y:env-set-if-unset-or-nil-env env2 env1)))
+
+(defvar y:no-proxy-list '("*.cn"
+                          "*.jd.com"
+                          "*.baidu.com"
+                          "*.bing.*"
+                          "*.csdn.*")
+  "Sites list for no-proxy.")
+
+(y:env-set-if-either-set "http_proxy" "https_proxy")
+(y:env-set-if-unset-or-nil-val "no_proxy"
+                               (mapconcat 'identity y:no-proxy-list ","))
+
+(defun y:set-package-archives-proxy(&optional force)
+  "Set package-archives to melpa.org if https-proxy enabled or FORCE non-nil."
+  (interactive)
+  (when (or (getenv "https_proxy") force)
+    (message "Set package-archives to melpa.org(official).")
+    (setq package-archives
+	  '(("melpa-stable" . "https://stable.melpa.org/packages/")
+	    ("melpa" . "https://melpa.org/packages/")
+	    ("gnu" . "https://elpa.gnu.org/packages/")
+	    ("org" . "http://orgmode.org/elpa/")
+	    ("marmalade" . "https://marmalade-repo.org/packages/")))))
+
+(defun y:set-package-archives-mirror(&optional force)
+  "Set package-archives to tsinghua if https-proxy disabled or FORCE non-nil."
+  (interactive)
+  (when (or (not (getenv "http_proxy")) force)
+    (message "Set package-archives to tsinghua mirror.")
+    (setq package-archives
+	  '(("gnu"   . "https://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
+	    ("org"   . "https://mirrors.tuna.tsinghua.edu.cn/elpa/org/")
+	    ("melpa" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
+	    ("melpa-stable" .
+	     "https://mirrors.tuna.tsinghua.edu.cn/elpa/melpa-stable/")))))
+
+;; Force to package-archives mirror for performance
+(y:set-package-archives-mirror t)
+;; (y:set-package-archives-proxy t)
+
+;;; package manage and org babel config
+
+;; set to utf-8-unix, otherwise pakcage install blames with
+;; Selecting Coding System ...
+(prefer-coding-system 'utf-8-unix)
+
+;; Active package for deep customization depends on it.
 (package-initialize)
 
 ;; FIXME: First starting emacs will cause an error for no use-package-*
@@ -51,10 +97,11 @@
 (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 (load custom-file t)
 
+;; use-package simplifies emacs packages install and config.
+;; GitHub: https://github.com/jwiegley/use-package
+;; HomePage: https://jwiegley.github.io/use-package/
 (unless (package-installed-p 'use-package)
-  (progn
-    (message "Install use-package")
-    (package-install 'use-package)))
+  (package-install 'use-package))
 
 (eval-when-compile
   (require 'use-package))
@@ -62,7 +109,39 @@
 (setq use-package-always-pin "melpa-stable")
 (setq use-package-always-defer t)
 
-(global-set-key (kbd "C-c C-f") 'find-function)
+;; quelpa and quelpa-use-package -
+;; Compile and install Emacs Lisp packages from source code.
+;; URL: https://github.com/quelpa/quelpa
+;;      https://github.com/quelpa/quelpa-use-package
+(use-package quelpa
+  :pin melpa
+  :init
+  ;; disable auto-upgrade for startup performance
+  ;; call y:quelpa-upgrade manually if necessary
+  (setq quelpa-self-upgrade-p nil)
+  (setq quelpa-update-melpa-p nil)
+  (setq quelpa-stable-p t))
+
+;; Provide quelpa option to use-package
+(use-package quelpa-use-package
+  :pin melpa
+  :init
+  (require 'quelpa-use-package))
+
+;; quelpa self update func
+(defun y:quelpa-upgrade()
+  "Upgrade quelpa package."
+  (interactive)
+  (setq quelpa-self-upgrade-p t
+        quelpa-update-melpa-p t)
+  (quelpa-upgrade)
+  (quelpa-checkout-melpa)
+  (setq quelpa-self-upgrade-p nil
+        quelpa-update-melpa-p nil)
+  (with-temp-buffer
+    (url-insert-file-contents
+     "https://raw.github.com/quelpa/quelpa/master/bootstrap.el")
+    (eval-buffer)))
 
 ;; FIXME: temporary use to reload init file
 ;;        reload init is different with restart,
@@ -70,8 +149,8 @@
 ;;        e.g.: remove a key binding.
 (global-set-key (kbd "C-c r")
                 (lambda()(interactive)
-                  (load-file (expand-file-name "init.el" user-emacs-directory)))
-		)
+                  (load-file
+                   (expand-file-name "init.el" user-emacs-directory))))
 
 ;; If you want to use the latest org, use the follows config:
 ;; 1. Download latest package or clone repo.
@@ -91,16 +170,44 @@
 ;; and org is a built-in package, so use-package would ignore org package
 ;; but org-plus-contrib is not installed default, so I think I can force install
 ;; org by routine package-install but failed.
-;;
-;; Test Code:
-;; (unless (package-installed-p 'org-plus-contrib)
-;;   (progn
-;;     (message "Install org to replace built-in")
-;;     (package-install 'org)))
 (use-package org
   :pin org
   :ensure org-plus-contrib)
-(org-babel-load-file "~/.emacs.d/config.org")
 
-;; evaluate emacs starting time
-(use-package esup)
+(defun y:org-babel-load-file-publish()
+  "Org babel load publish configurations."
+  (interactive)
+  (let* ((pubf (expand-file-name "publish-config.org" user-emacs-directory))
+         (srcf (expand-file-name "config.org" user-emacs-directory))
+         (buf (generate-new-buffer "*Org Publish Config*")))
+    (when (file-newer-than-file-p srcf pubf)
+      (with-temp-buffer
+        (insert-file-contents srcf)
+        (goto-char (point-min))
+        (while (re-search-forward "^ *:CATEGORY: *publish-config$" nil t)
+          (progn
+            (org-mode)
+            (org-back-to-heading)
+            (org-copy-subtree)
+            (message "Copy subtree(%s)" (nth 4 (org-heading-components)))
+            (outline-get-next-sibling)
+            (save-excursion
+              (switch-to-buffer buf)
+              (org-paste-subtree)
+              (goto-char (point-max))))))
+      (save-excursion
+        (switch-to-buffer buf)
+        (write-file pubf nil)
+        (kill-buffer)))
+    (org-babel-load-file pubf)
+
+    (message "Publish sites ...")
+    (org-publish-project "sites")))
+
+;; noninteractive t when batch mode
+(unless (getenv "Y:ESUP_PROFILER")
+  (if noninteractive
+      (y:org-babel-load-file-publish)
+    (org-babel-load-file (expand-file-name "config.org" user-emacs-directory))))
+
+;;; init.el ends here

@@ -26,7 +26,127 @@ You can download the configuration from GitHub freely:
 
 See notes [[http://ycode.org/emacs.html]] for more details.
 
+* Header for elisp area conventions
+  :PROPERTIES:
+  :CUSTOM_ID: header
+  :END:
+This section has no actual effect, you can remove this section safely. It's just
+used to generate some format code snippets to help auto-generated file config.el
+satisfing the elisp file format requirement. Refer to follow links:
+- CheckDoc: http://cedet.sourceforge.net/checkdoc.shtml
+- EmacsWiKi: https://www.emacswiki.org/emacs/ElispAreaConventions
+- Manual Simple Packages:
+https://www.gnu.org/software/emacs/manual/html_node/elisp/Simple-Packages.html
+#+BEGIN_SRC emacs-lisp
+  ;;; ~/.emacs.d/config.el --- Emacs Configuration File
+
+  ;; Copyright (C) 2017 yanyg<yygcode@gmail.com>
+
+  ;; Author: yanyg<yygcode@gmail.com>
+  ;; Maintainer: yanyg<yygcode@gmail.com>
+  ;; Keyword: emacs deep customize org development
+  ;; URL: http://ycode.org
+
+  ;;; Commentary:
+
+  ;; This file is auto-generated with org-babel.  The source is config.org.
+  ;; DO NOT modify this file(~/.emacs.d/config.el) directly.
+  ;; Please modify source file ~/.emacs.d/config.org.
+
+  ;;; Code:
+
+  (format-time-string "config.el start %Y-%m-%d %H:%M:%S" (current-time))
+  ;; change gc-cons-threshold 8MB for startup speed
+  (setq gc-cons-threshold (* 1024 1024 8))
+#+END_SRC
+
+* Emacs startup profiler
+If your emacs starts slowly(takes time more than you expected), you need to find
+out and optimize the initial items that exhaust time. package esup is used to
+achieve the purpose.
+
+*WARNING*: esup must be the first item because wrapper function y:esup set
+special environment and import init.el before any use-package executed.
+
+** esup
+I use init.el config net proxy, package-archive and org, then use org-babel load
+config.org to complete the rest and the most configurations. esup provides
+=esup-child-profile-require-level= deep to profile require statement, but it
+can not deep to profile org-babel file. I write wrapper function =y:esup= to
+analyze config.org time proportion.
+
+- Esup GitHub: https://github.com/jschaf/esup
+- Emacs Manual Profiling:
+https://www.gnu.org/software/emacs/manual/html_node/elisp/Profiling.html
+#+BEGIN_SRC emacs-lisp
+  ;; evaluate emacs starting time
+  (when (getenv "Y:ESUP_PROFILER")
+    (progn
+      ;; init.el does not evaluated when call y:esup
+      ;; then load init.el diretly here
+      (message "y:esup: Import init.el for Y:ESUP_PROFILER.")
+      (load-file (expand-file-name "init.el" user-emacs-directory))))
+  (defun y:esup()
+    "Profiler Emacs Startup Time."
+    (interactive)
+    (when (fboundp 'esup)
+      (progn
+        ;; First set env then load init.el to avoid recursive includes.
+        (setenv "Y:ESUP_PROFILER" "t")
+        (esup (expand-file-name "config.el" user-emacs-directory)))))
+
+  ;;(use-package esup
+  ;;  :init
+  ;;  (setq esup-child-profile-require-level 2))
+
+  ;; 2018-01-13: esup-0.6 is incompatible with emacs-26.0.90, use latest ver.
+  (quelpa '(esup :fetcher github :repo "jschaf/esup" :stable nil))
+#+END_SRC
+
+** benchmark-init
+*Notice* Import benchmark-init after package esup for esup enhancement.
+- GitHub: https://github.com/dholm/benchmark-init-el
+
+#+BEGIN_SRC emacs-lisp
+(use-package benchmark-init
+  :init
+  (benchmark-init/activate)
+  :hook
+  (after-init . benchmark-init/deactivate))
+#+END_SRC
+
+* Quelpa - package tools
+*Quelpa* is a tool to compile and install Emacs Lisp packages locally from
+source code which can reside on the local disk or remote git repo.
+
+Move the config to ~/.emacs.d/init.el. Comment here.
+
+The code snippet
+- GitHub: https://github.com/quelpa/quelpa
+- GitHub: https://github.com/quelpa/quelpa-use-package
+#+BEGIN_SRC emacs-lisp
+  ;; (use-package quelpa
+  ;;   :pin melpa)
+  ;; ;; quelpa self update func
+  ;; (defun y:quelpa-upgrade()
+  ;;   "Upgrade quelpa package."
+  ;;   (interactive)
+  ;;   (with-temp-buffer
+  ;;     (url-insert-file-contents
+  ;;      "https://raw.github.com/quelpa/quelpa/master/bootstrap.el")
+  ;;     (eval-buffer)))
+
+  ;; ;; Provide quelpa option to use-package
+  ;; (use-package quelpa-use-package
+  ;;   :pin melpa)
+
+  ;;   :init
+  ;;  (require 'quelpa-use-package)
+#+END_SRC
 * Environment check and specialize
+  :PROPERTIES:
+  :CATEGORY: publish-config
+  :END:
 ** Windows
 - Check environment variables, warn if misconfigured: =HOME, PATH=
 - Solve confliction between Emacs and Windows traditional key binds
@@ -60,35 +180,49 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 *** TODO Wait.
 
 ** Common
-- Use C system-time
+*** Use C system-time
 #+BEGIN_SRC emacs-lisp
   (setq system-time-locale "C")
 #+END_SRC
+*** Coding system
+- See [[https://www.gnu.org/software/emacs/manual/html_node/emacs/International.html#International][Manual International]] and [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Non_002dASCII-Characters.html#Non_002dASCII-Characters][Non-ASCII Characters]] for more details
+- Reset *default-process-coding-system* to local coding system for subprocess
+  will parse failed. (e.g.: emms + mplayer)
+#+BEGIN_SRC emacs-lisp
+  ;; Always want to use UTF-8, unix eol.
+  ;; But collaborations with subprocess require local coding system
+  (prefer-coding-system 'utf-8-unix)
+  (when (string-equal current-language-environment "Chinese-GBK")
+    ;; Do not use utf-8-unix . chinese-gbk-dos for
+    ;; the set will cause ggtags failure
+    (setq default-process-coding-system '(utf-8 . chinese-gbk)))
+#+END_SRC
 
 * Net Proxy
+Use envhttp_proxy
 - URIpackage
 - I use lantern to reach googles/youtube.
 - You can use Access_proxy to customize the variable.
 - Set by environments HTTP_PROXY, HTTPS_PROXY, NO_PROXY
-- ref to [[https://www.gnu.org/software/emacs/manual/html_mono/url.html][Manual URI]]
+- ref to [[https://www.gnu.org/software/emacs/manual/html_mono/url.html#Proxies][Manual URI Proxy]]
 #+BEGIN_SRC emacs-lisp
-  (when (getenv "HTTP_PROXY")
-    (message "Proxy: http proxy is %s" (getenv "HTTP_PROXY")))
-  ;;  (setq url-proxy-services '(("http" . "127.0.0.1:49529")
-  ;;                             ("https" . "127.0.0.1:49529")
-  ;;                             ("no_porxy" . "^\\(localhost\\|10.*\\|*.github.com\\|*.gitlab.com\\|*.baidu.com\\|*bing.com\\)")))
+  ;; Update variable with environments
+  (setq url-proxy-services
+        (list (cons "http_proxy" (getenv "http_proxy"))
+              (cons "https_proxy" (getenv "https_proxy"))
+              (cons "no_proxy" (replace-regexp-in-string
+                                "," "|" (getenv "no_proxy")))))
 #+END_SRC
 
 * Apperance
 ** ui
-- disable startup screen
+- disable startup screen(call M-x display-about-screen if needed)
 - customize scratch message
 - start with fullscreen
-- hide tool, menu, scroll bar
+- hide tool, menu, scroll bar if graphic
+- customize shape and color
 - disable ring
-- load comfortable theme monikai
 - show column and size in the mode line
-- monokai-theme is beautiful and compatible for me
 - enhance mode line under terminal
 #+BEGIN_SRC emacs-lisp
   (setq-default
@@ -115,6 +249,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
   ;; cursor
   (setq-default cursor-type 'bar)
   (blink-cursor-mode -1)
+  (set-cursor-color "#7EC0EE")
 
   ;; disable bell
   (setq visible-bell nil)
@@ -125,30 +260,51 @@ See notes [[http://ycode.org/emacs.html]] for more details.
   (column-number-mode t)
   (size-indication-mode t)
 
-  ;; monokai theme
-  (use-package monokai-theme
-    :init
-    (load-theme 'monokai t))
-
   ;; enhance terminal mode-line color
   (unless (display-graphic-p)
     (set-face-background 'mode-line "color-240"))
 
-  ;; diminish
+  ;; diminish: hide minor modes in mode line
   (use-package diminish
     :config
     (progn
       (diminish 'abbrev-mode)
-      (diminish 'eldoc-mode)))
+      (diminish 'eldoc-mode)
+      (diminish 'whitespace-mode)))
 #+END_SRC
 
-*** TODO more ui customize work
-    DEADLINE: <2017-07-07 Fri>
-- 80 column ruler
-  [[https://www.emacswiki.org/emacs/FillColumnIndicator][FillColumnIndicator]]
-  [[https://www.emacswiki.org/emacs/ColumnMarker][ColumnMarker]]
-  [[https://www.emacswiki.org/emacs/EightyColumnRule][EightyColumnRule]]
+** theme
+- Beautiful theme gallery: https://pawelbx.github.io/emacs-theme-gallery/
+- use theme monikai default. monokai-theme is beautiful and compatible for me.
 
+*** monokai-theme
+- GitHub: https://github.com/oneKelvinSmith/monokai-emacs
+#+BEGIN_SRC emacs-lisp
+  ;; monokai theme
+  (use-package monokai-theme
+    :init
+    (load-theme 'monokai t))
+#+END_SRC
+*** zenburn
+#+BEGIN_SRC emacs-lisp
+  ;; (use-package zenburn-theme
+  ;;  :init
+  ;;  (load-theme 'zenburn t))
+#+END_SRC
+*** solarized-theme
+- GitHub: https://github.com/bbatsov/solarized-emacs
+#+BEGIN_SRC emacs-lisp
+  ;; (use-package solarized-theme
+  ;;   :init
+  ;;   (load-theme 'solarized-dark t))
+#+END_SRC
+*** alect-light
+- GitHub: https://github.com/alezost/alect-themes
+#+BEGIN_SRC emacs-lisp
+  ;; (use-package alect-themes
+  ;;   :init
+  ;;   (load-theme 'alect-light))
+#+END_SRC
 ** font
 - Windows default to Lucida Sans
 - Set to Source Code Pro if available
@@ -168,15 +324,16 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 		      (font-spec :family "Microsoft YaHei" :size 15)))
 #+END_SRC
 
-* Misc Behaviors
+* Editor Behaviors
 - no backup files, managed files with repo
+- tab and return definition
 - typed text replaces the selected region
 - large file warning threshold set to 100MB
 - default directory set to my work directory
 - disable mouse
 - highlights operation portions
 - alias yes-no to y-n
-- desktop for linux
+- desktop for linux (because win startup very slowly if desktop enabled)
 #+BEGIN_SRC emacs-lisp
   (setq-default make-backup-files nil)
 
@@ -197,22 +354,16 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 
   (use-package disable-mouse
     :init
-    ;;(global-disable-mouse-mode)
+    (global-disable-mouse-mode)
     (dolist (hook '(prog-mode-hook text-mode-hook))
       (add-hook hook #'whitespace-mode))
     :diminish global-disable-mouse-mode)
 
   ;; windows too slow to open history files
-  (when (string-equal system-type "gnu/linux")
-    (desktop-save-mode 1))
+  ;;(when (string-equal system-type "gnu/linux")
+  (desktop-save-mode 1)
 
   (setq confirm-kill-processes nil)
-
-  ;; (use-package volatile-highlights
-  ;;   :pin melpa
-  ;;   :diminish volatile-highlights-mode
-  ;;   :init
-  ;;   (volatile-highlights-mode t))
 #+END_SRC
 
 - undo-tree
@@ -226,19 +377,11 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     :init
     (global-undo-tree-mode))
 #+END_SRC
-
-* Coding system
-- See [[https://www.gnu.org/software/emacs/manual/html_node/emacs/International.html#International][Manual International]] and [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Non_002dASCII-Characters.html#Non_002dASCII-Characters][Non-ASCII Characters]] for more details
-- Reset *default-process-coding-system* to local coding system for subprocess
-  will parse failed. (e.g.: emms + mplayer)
+* Basic Keybindings
 #+BEGIN_SRC emacs-lisp
-  ;; Always want to use UTF-8, unix eol.
-  ;; But collaborations with subprocess require local coding system
-  (prefer-coding-system 'utf-8-unix)
-  (when (string-equal current-language-environment "Chinese-GBK")
-    ;; Do not use utf-8-unix . chinese-gbk-dos for
-    ;; the set will cause ggtags failure
-    (setq default-process-coding-system '(utf-8 . chinese-gbk)))
+  (global-set-key (kbd "C-c h") 'man)
+  (global-set-key (kbd "C-o") 'other-window)
+  (global-set-key (kbd "C-c C-f") 'find-function)
 #+END_SRC
 
 * Helper routes
@@ -281,18 +424,32 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 
    (defun y:open-file-english-words()
      (interactive)
-     (find-file "~/org/h/english-words.org"))
+     (find-file "~/org/h/english-words.org")
+     (goto-char (point-max)))
    (global-set-key (kbd "C-c q e") 'y:open-file-english-words)
 
    (defun y:open-file-favorite-sites()
      (interactive)
-     (find-file "~/org/h/sites-map.org"))
+     (find-file "~/org/h/favorites.org")
+     (goto-char (point-max)))
    (global-set-key (kbd "C-c q w") 'y:open-file-favorite-sites)
 #+END_SRC
 
 * Org Mode
+Org mode is a great GTD tool. Do not modify the property-category. init.el will
+extracts sections of category publish-config to publish html.
+
 ** Default behaviors, Directory and Key binding
 - Homepage: [[http://orgmode.org/]]
+- My org layout:
+#+BEGIN_SRC text
+  org             <-- The root of org
+  ├── notes.org   <-- captures
+  ├── h           <-- Homepage
+  ├── i           <-- work(inspur)
+  ├── p           <-- personal/private data
+  └── misc        <-- All others
+#+END_SRC
 #+BEGIN_SRC emacs-lisp
   (use-package org
     :diminish org
@@ -304,19 +461,23 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     (progn
       (setq org-directory "~/org")
       (setq org-agenda-files (list org-directory
-				   (concat org-directory "/i")
-				   (concat org-directory "/p")))
+                                   (concat org-directory "/i")
+                                   (concat org-directory "/p")))
       (setq org-default-notes-file (concat org-directory "/notes.org"))
-      (setq system-time-locale "C"))
+      (setq system-time-locale "C")
+      (setq org-display-custom-times t)
+      (setq org-time-stamp-custom-formats
+            '("<%Y-%m-%d %a>" . "<%Y-%m-%d %a %H:%M>")))
     :bind
-    (("C-c o c" . org-capture)
-     ("C-c o a" . org-agenda))
+    (("C-c c" . org-capture)
+     ("C-c a" . org-agenda))
     :mode
     ("\\.org\\'" . org-mode))
 #+END_SRC
 
 ** Bullets
 - Homepage: [[https://github.com/sabof/org-bullets][GitHub Org Bullets]]
+- FIXME: Win7 Ultimate CN version can not show heading bullets low than level 3
 #+BEGIN_SRC emacs-lisp
   (when (find-font (font-spec :name "Source Code Pro" :size 15))
     (use-package org-bullets
@@ -347,6 +508,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 #+END_SRC
 
 ** Font config for table alignment
+- FIXME: batch mode set font for frame exited abnormally (set-fontset-font)
 #+BEGIN_SRC emacs-lisp
   (defun y:org-set-fontset-set()
     (when (find-font (font-spec :name "Source Code Pro" :size 15))
@@ -354,113 +516,365 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 
     ;; MS YaHei for CJK
     (dolist (charset '(kana han symbol cjk-misc bopomofo))
+      ;; If set first argument to nil(frame), batch mode abnormally exited.
       (set-fontset-font nil charset
-			(font-spec :family "Microsoft YaHei" :size 18))))
-  (add-hook 'org-mode-hook 'y:org-set-fontset-set)
+                        (font-spec :family "Microsoft YaHei" :size 18))))
+
+  (unless noninteractive
+    (add-hook 'org-mode-hook 'y:org-set-fontset-set))
 #+END_SRC
 
 ** Export and Publish
+  :PROPERTIES:
+  :CATEGORY: publish-config
+  :END:
+- htmlize
+  + Convert buffer text and decorations to HTML. Need by org-publish.
+  + GitHub: https://github.com/hniksic/emacs-htmlize
+
+- org publish
+  + Convert org files to HTMLs, and update exported pages to web server.
+  + Manual: https://orgmode.org/manual/Publishing.html
+  + Worg: https://orgmode.org/worg/org-tutorials/org-publish-html-tutorial.html
+
+- Layout Example: source ~/org/h/, publish to ~/hp (h/hp is abbrs of homepage).
+#+BEGIN_SRC text
+~/org/h/            <-- Root of homepage
+├── index.org       <-- Index org (generate index.html)
+├── blogs           <-- Blogs
+├── mm              <-- All images/videos
+├── res             <-- css/js/icons
+#+END_SRC
+
 #+BEGIN_SRC emacs-lisp
   (use-package htmlize)
 
-  (defadvice org-html-paragraph (before org-html-paragraph-advice
-					(paragraph contents info) activate)
-    "Join consecutive Chinese lines into a single long line without
-      unwanted space when exporting org-mode to html."
-    (let* ((origin-contents (ad-get-arg 1))
-	   (fix-regexp "[[:multibyte:]]")
-	   (fixed-contents
-	    (replace-regexp-in-string
-	     (concat "\\(" fix-regexp "\\) *\n *\\(" fix-regexp "\\)")
-	     "\\1\\2" origin-contents)))
-      (ad-set-arg 1 fixed-contents)))
+  (defun y:file-string(file)
+    (let ((f (expand-file-name file user-emacs-directory)))
+      (if (file-readable-p f)
+          (with-temp-buffer (insert-file-contents f) (buffer-string))
+        "")))
 
-  (defun y:org-publish-setup()
-    "Org publish setup"
-    ;; http://orgmode.org/manual/Publishing-options.html
-    ;;(setq org-export-with-sub-superscripts nil)
-    (setq org-export-with-sub-superscripts '{})
-    (setq org-export-with-timestamps nil)
-    (setq org-export-author "yanyg")
-    (setq org-export-with-creator nil)
-    (setq org-export-with-date nil)
-    (setq org-export-with-email t)
-    (setq org-export-with-toc t)
-    (setq org-export-with-section-numbers 't)
-    (setq org-html-preamble nil)
-    (setq org-html-postamble nil)
-    (setq org-html-link-home "https://ycode.org")
-    (when (file-exists-p "~/hp/css/site.css")
-      (setq org-html-head
-	    (concat
-	     "<style type=\"text/css\">"
-	     (with-temp-buffer
-	       (insert-file "~/hp/css/site.css")
-	       (buffer-string))
-	     "</style>")))
-    ;; see org-html-style-default
-    (setq org-html-head-include-default-style nil)
-
-    ;; see org-html-scripts
-    ;; (setq org-html-head-include-scripts nil)
-    (setq org-html-htmlize-output-type 'css)
-
-    ;;
-    (setq org-html-preamble-format '(("en" "<table border=\"2\" cellspacing=\"0\" cellpadding=\"6\" rules=\"groups\" frame=\"hsides\">
-  <colgroup>
-  <col  class=\"org-left\" />
-  <col  class=\"org-left\" />
-  <col  class=\"org-left\" />
-  <col  class=\"org-left\" />
-  <col  class=\"org-left\" />
-  </colgroup>
-
-  <tbody><tr>
-  <td class=\"org-left\"><a href=\"index.html\">Home</a></td>
-  <td class=\"org-left\"><a href=\"https://github.com/yygcode\">Github</a></td>
-  </tr></tbody></table>"))
-	  )
-
-    ;; http://orgmode.org/worg/org-tutorials/org-publish-html-tutorial.html
-    (setq org-publish-project-alist
-	  '(("pages"
-	     :base-directory "~/org/h/"
-	     :publishing-directory "~/hp/"
-	     :recursive nil
-	     :with-author t
-	     :with-date t
-	     :with-email t
-	     :html-head-include-default-style nil
-	     :html-head "<link rel=\"shortcut icon\" href=\"http://ycode.org/css/favicon.ico\" />
-      <link rel=\"stylesheet\" type=\"text/css\" href=\"css/site.css\" />"
-	     :publishing-function org-html-publish-to-html
-	     ;; :auto-sitemap 't
-	     ;; :sitemap-filename "sitemap.org"
-	     ;; :sitemap-title "Sitemap"
-	     :with-toc 't)
-	    ("blog"
-	     :base-directory "~/hp/src/blogs/"
-	     :publishing-directory "~/hp/blogs/"
-	     :recursive nil
-	     :html-head-include-default-style nil
-	     :html-head "<link rel=\"shortcut icon\" href=\"http://ycode.org/css/favicon.ico\" />
-      <link rel=\"stylesheet\" type=\"text/css\" href=\"../css/site.css\" />"
-	     :publishing-function org-html-publish-to-html
-	     :section-numbers 't
-	     :with-toc 't)
-	    ("site" :components ("pages" "blog"))))
-    )
-
-  (use-package ox-publish
+  (use-package org
     :pin org
     :ensure org-plus-contrib
     :init
-    (y:org-publish-setup))
+    (require 'ox)
+    (require 'ox-html)
+    (require 'ox-publish)
+    (require 'ox-rss)
+    (setq org-export-default-language "zh-CN")
+    (setq org-html-coding-system 'utf-8-unix)
+    (setq org-html-viewport nil) ;; FIXME: what exactly this ?
+    ;; colored code, invalid for batch mode because no font fontify
+    ;; (setq org-html-table-default-attributes '(:class "table table-hover"))
+    (setq org-html-table-default-attributes nil)
+    (setq org-html-htmlize-output-type 'css)
+    (setq org-html-head-include-default-style nil)
+    (setq org-html-head-include-scripts nil)
+    (setq org-export-with-priority t)
+    (setq org-export-with-sub-superscripts '{})
+    (setq org-html-preamble (y:file-string "misc/publish-blog-preamble.html"))
+    (setq org-html-postamble nil)
+    (setq org-html-head (y:file-string "misc/publish-blog-head.html"))
+    (setq org-time-stamp-custom-formats '("%F" . "%F %H:%M"))
+    (setq-default org-display-custom-times t)
+    (add-to-list 'org-structure-template-alist
+                 (list "p" "#+BEGIN_PREVIEW\n?\n#+END_PREVIEW")))
 
+  ;; eliminate extra whitespace of zh multiline.
+  (defadvice org-html-paragraph (before org-html-paragraph-advice
+                                        (paragraph contents info) activate)
+    "Join consecutive Chinese lines into a single long line without
+            unwanted space when exporting org-mode to html."
+    (let* ((origin-contents (ad-get-arg 1))
+           (fix-regexp "[[:multibyte:]]")
+           (fixed-contents
+            (replace-regexp-in-string
+             (concat "\\(" fix-regexp "\\) *\n *\\(" fix-regexp "\\)")
+             "\\1\\2" origin-contents)))
+      (ad-set-arg 1 fixed-contents)))
+
+  (defun y:blog-sitemap(title &optional list)
+    "Generate Sitemap Items for TITLE and LIST."
+    (let ((contents
+           (with-temp-buffer
+             (insert (org-list-to-org list))
+             (goto-char (point-min))
+             (when (re-search-forward "[[file:theindex.org][Index]]" nil t)
+               (move-beginning-of-line nil)
+               (kill-line)
+               (message "Remove the item Index in sitemap."))
+             (buffer-string))))
+      (concat "#+TITLE: " title "\n------\n\n" contents)))
+
+  (defun y:main-sitemap(title &optional list)
+    "Generate Sitemap Items for TITLE and LIST."
+    (let ((contents
+           (with-temp-buffer
+             (insert (org-list-to-org list))
+             (goto-char (point-min))
+             (when (re-search-forward "[[file:theindex.org][Index]]" nil t)
+               (move-beginning-of-line nil)
+               (kill-line))
+             (buffer-string))))
+      (concat "#+TITLE: " title "\n------\n\n" contents)))
+
+  (defun y:publish-file-string(project file1 &optional file2)
+    "Get String from FILE1 or FILE2.
+  If filename is not absolute, then use PROJECT directory for FILE1
+  and `user-emacs-directory` for FILE2."
+    (let* ((dir (plist-get project :base-directory))
+           (f (expand-file-name file1 dir)))
+      (unless (file-readable-p f)
+        (setq f (expand-file-name (or file2 file1) user-emacs-directory)))
+      (message "Try file project(%s) file(%s)" dir f)
+      (if (file-readable-p f)
+          (with-temp-buffer (insert-file-contents f) (buffer-string))
+        "")))
+
+  (defun y:publish-common-preparation(project file)
+    "Publish Preparation html-head-extra for PROJECT.
+  FILE is default one if head.html could not find in project directory."
+
+    ;; FIX: ox-publish bug `org-publish-find-date` for date in org file.
+    (defun org-publish-find-date(file project)
+      (y:org-publish-find-date file project))
+
+    (plist-put project :html-head-extra
+               ;; customized head.html have high priority
+               (y:publish-file-string project "head.html" file)))
+
+  (defun y:publish-common-completion(project)
+    "Complete for PROJECT."
+    (message "Complete project(%s)" (plist-get project :base-directory)))
+
+  (defun y:blog-preparation(project)
+    (y:publish-common-preparation project "misc/publish-blog-head.html"))
+
+  (defun y:main-preparation(project)
+    (y:publish-common-preparation project "misc/publish-main-head.html"))
+
+  (defun y:blog-completion(project)
+    (y:publish-common-completion project))
+
+  (defun y:main-completion(project)
+    (y:publish-common-completion project))
+
+  (defun y:blog-preamble(project)
+    (y:publish-file-string project "preamble.html"
+                           "misc/publish-blog-preamble.html"))
+
+  (defun y:project-postamble(project)
+    "Return html postamble string of PROJECT."
+    (let* ((pathname (plist-get project :output-file))
+           (dirname (file-name-directory pathname))
+           (filename (file-name-nondirectory pathname))
+           (disqus) (postamble-file))
+
+      ;; discard prefix of dirname
+      (setq dirname (replace-regexp-in-string ".*/hp/" "" dirname))
+
+      ;; disqus config
+      (setq disqus (y:file-string "misc/publish-disqus.html"))
+      (setq disqus (replace-regexp-in-string
+                    "PAGE_URL"
+                    (format "'http://ycode.org/%s%s'" dirname filename) disqus t))
+      (setq disqus (replace-regexp-in-string "PAGE_IDENTIFIER"
+                                             (concat "'" filename "'")disqus t))
+
+      ;; set postamble file depends on directory
+      (cond ((string-match "^$" dirname)
+             (setq postamble-file "misc/publish-main-postamble.html"))
+            ((string-match "^blogs/$" dirname)
+             (setq postamble-file "misc/publish-blog-postamble.html")))
+
+      ;; generate postamble string
+      (message "============f=%s dirname='%s'" postamble-file dirname)
+      (format "%s\n%s" disqus
+              (y:publish-file-string project "postamble.html" postamble-file))))
+
+  (defun y:blog-postamble(project)
+    (y:publish-file-string project "postamble.html"
+                           "misc/publish-blog-postamble.html")
+    (message "hello run postamble: %s(%s)" (plist-get project :author)
+                (file-name-nondirectory (plist-get project :output-file))))
+
+  (defun y:main-preamble(project)
+    (y:publish-file-string project "preamble.html"
+                           "misc/publish-main-preamble.html"))
+
+  (defun y:main-postamble(project)
+    (y:publish-file-string project "postamble.html"
+                           "misc/publish-main-postamble.html"))
+
+  (defun y:org-publish-find-date(entry project)
+    "Fix bug of org-publish-find-date fpr ENTRY, PROJECT."
+    (let* ((date (org-publish-find-property entry :date project)))
+      ;; format-time-string don't know YYYY-MM-DD;
+      ;; so convert YYYY-MM-DD to YYYY-MM-DD 00:00
+      (if date
+          (progn
+            (setq date (org-no-properties
+                        (org-element-interpret-data date)))
+            (unless (string-match "[1-9]:[0-5]" date)
+              (setq date (concat date " 00:00")))
+            (setq date (safe-date-to-time date)))
+        (setq date (current-time)))
+      date))
+
+  (defun y:sitemap-format-entry(entry style project)
+    "Add Date Prefix for ENTRY STYLE PROJECT."
+    (cond ((not (directory-name-p entry))
+           (let* ((date (y:org-publish-find-date entry project)))
+             (format "[%s] [[file:%s][%s]]"
+                     (format-time-string "%F" date) entry
+                     (org-publish-find-title entry project))))
+          ((eq style 'tree)
+           ;; Return only last subdir.
+           (file-name-nondirectory (directory-file-name entry)))
+          (t entry)))
+
+  (setq org-publish-project-alist
+        `(("blogs"
+           :base-directory "~/org/h/blogs/"
+           :base-extension "org"
+           :publishing-directory "~/hp/blogs/"
+           :preparation-function y:blog-preparation
+           :completion-function y:blog-completion
+           :recursive t
+           :headline-levels 4
+           :auto-sitemap t
+           :auto-sitemap t
+           :sitemap-filename "archives.org"
+           :sitemap-function y:blog-sitemap
+           :sitemap-format-entry y:sitemap-format-entry;; org-publish-find-date
+           :sitemap-title "Archives"
+           :sitemap-sort-files anti-chronologically
+           :sitemap-style list
+           :makeindex t
+           :auto-preamble t
+           :author "yanyg"
+           :email "yygcode@gmail.com"
+           :html-link-home ""
+           :html-link-up ""
+           :html-preamble y:blog-preamble
+           :html-head nil ;; see y:blog-prepartion
+           :html-head-extra nil;; see y:blog-prepartion
+           :html-postamble y:project-postamble
+           :publishing-function org-html-publish-to-html
+           :section-numbers t
+           :htmlized-source t
+           :with-toc t)
+          ("attachment" ;; all sites attachments put together
+           :base-directory "~/org/h/"
+           :base-extension "css\\|js\\|png\\|jpg\\|gif\\|pdf\\|mp3\\|ogg\\|mp4\\|ttf"
+           :publishing-directory "~/hp/"
+           :recursive t
+           :publishing-function org-publish-attachment
+           )
+          ("main"
+           :base-directory "~/org/h/"
+           :base-extension "org"
+           :publishing-directory "~/hp/"
+           :recursive nil
+           :preparation-function y:main-preparation
+           :completion-function y:main-completion
+           :headline-levels 4
+           :auto-sitemap t
+           :auto-sitemap t
+           :sitemap-function y:main-sitemap
+           :sitemap-format-entry y:sitemap-format-entry;; org-publish-find-date
+           :sitemap-filename "main.org"
+           :sitemap-title "Main Archives"
+           :sitemap-sort-files anti-chronologically
+           :sitemap-style list
+           :makeindex t
+           :auto-preamble t
+           :author "yanyg"
+           :email "yygcode@gmail.com"
+           :html-link-home ""
+           :html-link-up ""
+           :html-preamble y:main-preamble
+           :html-head nil
+           :html-head-extra nil
+           :html-postamble y:project-postamble
+           :publishing-function org-html-publish-to-html
+           :section-numbers t
+           :htmlized-source t
+           :with-toc t)
+          ("sites"
+           :components ("attachment" "main" "blogs"))))
+
+  (defun y:publish-sites()
+    "Publish Sites."
+    (interactive)
+    (save-excursion
+      ;;(setenv "HOME" "/home/yanyg/edebug")
+      (call-process-shell-command "touch ~/org/h/blogs/*.org && echo touched"
+                                  nil "*Shell Output*" t)
+      (call-process-shell-command "emacs --batch -l ~/.emacs.d/init.el"
+                                  nil "*Shell Output*" t)
+      ;;(setenv "HOME" "/home/yanyg")
+      ))
+  (global-set-key (kbd "C-c p") 'y:publish-sites)
 #+END_SRC
 
-** Publish
-* Documents view                                                        :pdf:
+** org2blog
+#+BEGIN_SRC emacs-lisp
+  ;; (use-package org2blog)
+#+END_SRC
+** o-blog
+- GitHub: https://github.com/renard/o-blog
+- GitHubIO: https://renard.github.io/o-blog-v2/
+#+BEGIN_SRC emacs-lisp
+  ;; (use-package o-blog)
+#+END_SRC
+** blog octopress
+- GitHub: https://github.com/yoshinari-nomura/org-octopress
+#+BEGIN_SRC emacs-lisp
+  ;; (use-package org-octopress
+  ;;   :pin melpa
+  ;;   :init
+  ;;   (progn
+  ;;     (setq org-octopress-directory-top       "~/octopress/source")
+  ;;     (setq org-octopress-directory-posts     "~/octopress/source/_posts")
+  ;;     (setq org-octopress-directory-org-top   "~/octopress/source")
+  ;;     (setq org-octopress-directory-org-posts "~/octopress/source/blog")
+  ;;     (setq org-octopress-setup-file          "~/org-sty/setupfile.org")))
+#+END_SRC
+** org-page
+- GitHub: https://github.com/kelvinh/org-page
+#+BEGIN_SRC emacs-lisp
+  ;; ;; (use-package org-page
+  ;; ;;   :quelpa (org-page :fetcher github :repo kelvinh/org-page))
+  ;; (use-package ht)
+  ;; (use-package mustache)
+  ;; (when (file-exists-p "~/.emacs.d/elpa/org-page-0.7")
+  ;;   (progn
+  ;;     (add-to-list 'load-path "~/.emacs.d/elpa/org-page-0.7")
+  ;;     (require 'org-page)
+  ;;     (setq op/repository-directory "~/org-page")
+  ;;     (setq op/site-domain "http://ycode.org/")
+  ;; ;;; for commenting, you can choose either disqus, duoshuo or hashover
+  ;;     (setq op/personal-disqus-shortname "yygcode")
+  ;; ;;;    (setq op/personal-duoshuo-shortname "yygcode")
+  ;;     (setq op/hashover-comments t)
+  ;; ;;; the configuration below are optional
+  ;;     (setq op/personal-google-analytics-id "yygcode")
+  ;;     )
+  ;;   )
+#+END_SRC
+** org-pomodoro
+- https://github.com/lolownia/org-pomodoro
+#+BEGIN_SRC emacs-lisp
+  (use-package org-pomodoro
+    :pin melpa
+    :init
+    (setq org-pomodoro-length 30))
+#+END_SRC
+
+* Documents view
 ** pdf-tools
 - github: [[https://github.com/politza/pdf-tools][pdf-tools-github]]
 - git:
@@ -475,43 +889,46 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     (setq lines (* arg 10))
     (with-selected-window (other-window-for-scrolling)
       (if (string-equal major-mode "pdf-view-mode")
-	  (progn
-	    ;;            (setq lines (or lines 1))
-	    (let* ((count arg)
-		   v)
-	      (or (< 0 count) (setq count (- count)))
-	      (dotimes (v count)
-		(if (< lines 0)
-		    (pdf-view-previous-line-or-previous-page 1)
-		  (pdf-view-next-line-or-next-page 1)))))
-	(message "lines %d" lines)
-	(scroll-up-line lines))))
+          (progn
+            ;;            (setq lines (or lines 1))
+            (let* ((count arg)
+                   v)
+              (or (< 0 count) (setq count (- count)))
+              (dotimes (v count)
+                (if (< lines 0)
+                    (pdf-view-previous-line-or-previous-page 1)
+                  (pdf-view-next-line-or-next-page 1)))))
+        (message "lines %d" lines)
+        (scroll-up-line lines))))
 
   (defun y:scroll-other-window-opposite(&optional lines)
     (interactive "p")
     (y:scroll-other-window (- lines)))
 
-  (global-set-key (kbd "C-c C-n") 'y:scroll-other-window)
-  (global-set-key (kbd "C-c C-p") 'y:scroll-other-window-opposite)
+  (global-set-key (kbd "C-c C-<down>") 'y:scroll-other-window)
+  (global-set-key (kbd "C-c C-<up>") 'y:scroll-other-window-opposite)
 
-  (use-package pdf-tools
-    :init
-    (setq doc-view-continuous t)
-    ;;(add-to-list 'org-file-apps
-    ;;             '("\\.pdf\\'" . default))
-    ;; Ensure turn off linum mode for known bugs(choke)
-    (pdf-tools-install :no-query-p)
-    (setq-default pdf-view-display-size 'fit-height)
-    (setq pdf-view-midnight-colors '("#F8F8F2" . "#272822"))
-    (define-key pdf-view-mode-map (kbd "C-s") 'isearch-forward)
-    (add-hook 'pdf-view-mode-hook '(lambda()
-				     (setq display-line-numbers nil)
-				     (pdf-view-midnight-minor-mode)
-				     (pdf-view-fit-page-to-window)))
-    :diminish pdf-view-mode
-    :bind
-    (("C-c n" . y:scroll-other-window)
-     ("C-c p" . y:scroll-other-window-opposite)))
+  ;; (use-package pdf-tools
+  ;;   :init
+  ;;   (setq doc-view-continuous t)
+  ;;   ;;(add-to-list 'org-file-apps
+  ;;   ;;             '("\\.pdf\\'" . default))
+  ;;   ;; Ensure turn off linum mode for known bugs(choke)
+  ;;   (pdf-tools-install :no-query-p)
+  ;;   (setq-default pdf-view-display-size 'fit-height)
+  ;;   (setq pdf-view-midnight-colors '("#F8F8F2" . "#272822"))
+  ;;   (define-key pdf-view-mode-map (kbd "C-s") 'isearch-forward)
+  ;;   (add-hook 'pdf-view-mode-hook '(lambda()
+  ;;                               (setq display-line-numbers nil)
+  ;;                               (pdf-view-midnight-minor-mode)
+  ;;                               (pdf-view-fit-page-to-window)))
+  ;;   :diminish pdf-view-mode
+  ;;   :bind
+  ;;   (:map pdf-view-mode-map
+  ;;    ("j" . pdf-view-next-line-or-next-page)
+  ;;    ("k" . pdf-view-previous-line-or-previous-page)
+  ;;    ("," . pdf-view-next-line-or-next-page)
+  ;;    ("." . pdf-view-previous-line-or-previous-page)))
 
   ;; use pdf-view for org-links
   ;; (use-package org-pdfview
@@ -522,6 +939,20 @@ See notes [[http://ycode.org/emacs.html]] for more details.
   ;;(require 'org-pdfview)
   ;;(add-to-list 'org-file-apps
   ;;             '("\\.pdf\\'" . (lambda (file link) (org-pdfview-open link))))
+#+END_SRC
+* Git
+#+BEGIN_SRC emacs-lisp
+  (use-package magit)
+#+END_SRC
+* Layer - Evil
+- https://github.com/emacs-evil/evil
+#+BEGIN_SRC emacs-lisp
+  (use-package evil
+    :init
+    (progn
+      (setq evil-default-cursor 'bar)
+      (setq evil-emacs-state-cursor '("SkyBlue2" bar))
+  ))
 #+END_SRC
 * Development Enviroments
 ** Common
@@ -542,12 +973,12 @@ See notes [[http://ycode.org/emacs.html]] for more details.
   [[http://alexott.net/en/writings/emacs-devenv/EmacsCedet.html]]
 #+BEGIN_SRC emacs-lisp
   (defun y:ac-source-semantic()
-    (add-to-list 'ac-sources 'y:ac-source-semantic))
+    (add-to-list 'ac-sources 'ac-source-semantic))
   (add-hook 'c-mode-common-hook 'y:ac-source-semantic)
   (use-package cedet
     :init
     (global-ede-mode 1)
-    (global-semantic-idle-scheduler-mode 1)
+    ;;(global-semantic-idle-scheduler-mode 1)
     (add-hook 'c-mode-hook 'semantic-default-c-setup)
     (add-hook 'c++-mode-hook 'semantic-default-c-setup)
     :config
@@ -581,6 +1012,16 @@ See notes [[http://ycode.org/emacs.html]] for more details.
   (use-package ecb-autoloads
     :ensure ecb)
 #+END_SRC
+*** flycheck
+- GitHub: https://github.com/flycheck/flycheck
+- Homepage: http://www.flycheck.org/en/latest/
+#+BEGIN_SRC emacs-lisp
+  (use-package flycheck
+    :init
+    (global-flycheck-mode)
+    :diminish
+    (flycheck-mode))
+#+END_SRC
 *** highlight-symbol
 - Homepage: [[https://github.com/nschum/highlight-symbol.el][GitHub]]
 #+BEGIN_SRC emacs-lisp
@@ -588,8 +1029,12 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     :diminish highlight-symbol-mode
     :init
     (add-hook 'prog-mode-hook #'highlight-symbol-mode)
+    ;; The original func always print ugly string '<N> occurrences in buffer'
+    ;; Replace with dummy empty function
+    (setq highlight-symbol-occurrence-message nil)
+    (defun highlight-symbol-count (&optional symbol) ())
     :config
-    (setq highlight-symbol-idle-delay 0.8)
+    (setq highlight-symbol-idle-delay .5)
     :bind
     (([f8] . highlight-symbol-at-point)
      ([S-f8] . highlight-regexp)))
@@ -608,14 +1053,42 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 #+BEGIN_SRC emacs-lisp
   (use-package iedit
     :bind
-    (("C-;" . iedit-mode)))
+    (("C-c ;" . iedit-mode)))
 #+END_SRC
 *** line number
 #+BEGIN_SRC emacs-lisp
-  (setq-default display-line-numbers-width 4)
-  (when (fboundp 'global-display-line-numbers-mode)
-    (global-display-line-numbers-mode 1))
+  ;;(unless (version< "26.0.90" emacs-version)
+  ;;  (setq-default display-line-numbers-width 2)
+  ;;  (global-display-line-numbers-mode 1))
 
+  ;; (defun y:line-numbers-width()
+  ;;   (unless (version< "26.0.90" emacs-version)
+  ;;     (progn
+  ;;       (let* ((nlines (count-lines (point-min) (point-max)))
+  ;;         (slines (number-to-string nlines)))
+  ;;    ;; (message "Set width to %d" (string-width slines))
+  ;;    (setq display-line-numbers-width (string-width slines))))))
+
+  ;; (defun y:line-numbers-mode-hook()
+  ;;   (unless (version< "26.0.90" emacs-version)
+  ;;     (progn
+  ;;       (display-line-numbers-mode 1)
+  ;;       (y:line-numbers-width))))
+
+  (defun y:line-numbers-width()
+    (let* ((nlines (count-lines (point-min) (point-max)))
+	   (slines (number-to-string nlines)))
+      ;; (message "Set width to %d" (string-width slines))
+      (setq display-line-numbers-width (string-width slines))))
+
+  (unless (version< "26.0.90" emacs-version)
+    (progn
+      (setq display-line-numbers-width-start t)
+      (add-hook 'text-mode-hook 'display-line-numbers-mode)
+      (add-hook 'prog-mode-hook 'display-line-numbers-mode)
+      ;;(add-hook 'special-mode-hook 'display-line-numbers-mode)
+      ;; (advice-add 'newline :after #'y:line-numbers-width)
+))
 #+END_SRC
 
 *** smartparens
@@ -702,19 +1175,27 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     (semantic-mode 1))
 #+END_SRC
 
+*** xcscope
+#+BEGIN_SRC emacs-lisp
+  (use-package xcscope
+    :init
+    (cscope-setup))
+#+END_SRC
 ** C/C++
 *** auto complete C headers
 - Homepage: [[https://github.com/mooz/auto-complete-c-headers][GitHub Auto-complete-C-headers]]
 - include dir in mingw: =gcc -v -c x.c=
 - include dir in linux/cygwin: =gcc -xc++ -E -v -=
 #+BEGIN_SRC emacs-lisp
-  (if (string= system-type "windows-nt")
+  ;; FIXME: linux/cygwin config here
+  (setq y:ac-c-headers nil)
+
+  (when (string= system-type "windows-nt")
     (setq y:ac-c-headers
 	  '("F:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/7.2.0/include"
 	    "F:/msys64/mingw64/include"
 	    "F:/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/7.2.0/include-fixed"
-	    "F:/msys64/mingw64/x86_64-w64-mingw32/include"))
-    (setq y:ac-c-headers nil))
+	    "F:/msys64/mingw64/x86_64-w64-mingw32/include")))
 
   (defun y:ac-c-headers-init()
     (add-to-list 'ac-sources 'ac-source-c-headers)
@@ -724,6 +1205,7 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     )
 
   (use-package auto-complete-c-headers
+    :pin melpa
     :defer nil
     :init
     (require 'auto-complete-c-headers)
@@ -896,6 +1378,86 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     "y:c-mcs")
   (c-add-style "y:c-mcs" y:c-style-inspur)
 
+  (defconst y:c++-style-alibaba
+    '((c-tab-always-indent . nil) ; manualy added
+      (c-basic-offset . 4)     ; Guessed value
+      (c-offsets-alist
+       (block-close . 0)       ; Guessed value
+       (brace-list-close . 0)  ; Guessed value
+       (brace-list-entry . 0)  ; Guessed value
+       (brace-list-intro . +)  ; Guessed value
+       (class-close . 0)       ; Guessed value
+       (defun-block-intro . +) ; Guessed value
+       (defun-close . -)       ; Guessed value
+       (defun-open . -)        ; Guessed value
+       (else-clause . 0)       ; Guessed value
+       (inclass . +)           ; Guessed value
+       (statement . 0)         ; Guessed value
+       (statement-block-intro . +) ; Guessed value
+       (statement-cont . +)    ; Guessed value
+       (substatement . +)      ; Guessed value
+       (topmost-intro . 0)     ; Guessed value
+       (access-label . -)
+       (annotation-top-cont . 0)
+       (annotation-var-cont . +)
+       (arglist-close . c-lineup-close-paren)
+       (arglist-cont c-lineup-gcc-asm-reg 0)
+       (arglist-cont-nonempty . c-lineup-arglist)
+       (arglist-intro . +)
+       (block-open . 0)
+       (brace-entry-open . 0)
+       (brace-list-open . 0)
+       (c . c-lineup-C-comments)
+       (case-label . 0)
+       (catch-clause . 0)
+       (class-open . 0)
+       (comment-intro . c-lineup-comment)
+       (composition-close . 0)
+       (composition-open . 0)
+       (cpp-define-intro c-lineup-cpp-define +)
+       (cpp-macro . -1000)
+       (cpp-macro-cont . +)
+       (do-while-closure . 0)
+       (extern-lang-close . 0)
+       (extern-lang-open . 0)
+       (friend . 0)
+       (func-decl-cont . +)
+       (incomposition . +)
+       (inexpr-class . +)
+       (inexpr-statement . +)
+       (inextern-lang . +)
+       (inher-cont . c-lineup-multi-inher)
+       (inher-intro . +)
+       (inlambda . c-lineup-inexpr-block)
+       (inline-close . 0)
+       (inline-open . +)
+       (inmodule . +)
+       (innamespace . 0)
+       (knr-argdecl . 0)
+       (knr-argdecl-intro . 0)
+       (label . 0)
+       (lambda-intro-cont . +)
+       (member-init-cont . c-lineup-multi-inher)
+       (member-init-intro . +)
+       (module-close . 0)
+       (module-open . 0)
+       (namespace-close . 0)
+       (namespace-open . 0)
+       (objc-method-args-cont . c-lineup-ObjC-method-args)
+       (objc-method-call-cont c-lineup-ObjC-method-call-colons c-lineup-ObjC-method-call +)
+       (objc-method-intro .
+                          [0])
+       (statement-case-intro . +)
+       (statement-case-open . 0)
+       (stream-op . c-lineup-streamop)
+       (string . -1000)
+       (substatement-label . 0)
+       (substatement-open . 0)
+       (template-args-cont c-lineup-template-args +)
+       (topmost-intro-cont . c-lineup-topmost-intro-cont)))
+    "y:c++-alibaba")
+  (c-add-style "y:c++-alibaba" y:c++-style-alibaba)
+
   (defun y:c-style-hook()
     "Config c style depends on file pathname"
     (if (and (buffer-file-name)
@@ -908,12 +1470,42 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 	(setq indent-tabs-mode t))
       ))
   (add-hook 'c-mode-hook 'y:c-style-hook)
+  (defun y:c++-style-hook()
+    "Config c++ style depends on file pathname"
+    (if (and (buffer-file-name)
+             (string-match "/mcs/" (buffer-file-name)))
+        (progn
+          (c-set-style "y:c-mcs")
+          (setq indent-tabs-mode nil))
+      (progn
+        (c-set-style  "y:c++-alibaba")
+        (setq indent-tabs-mode nil))
+      ))
+  (add-hook 'c++-mode-hook 'y:c++-style-hook)
 #+END_SRC
 ** Python
+** CSS
+#+BEGIN_SRC emacs-lisp
+  (setq css-indent-offset 2)
+#+END_SRC
 ** Project
 #+BEGIN_SRC emacs-lisp
-  (setq project-linux-build-directory-default "~/gnu/linux-4.12")
-  (setq project-linux-architecture-default "x86")
+  (defun y:linux-build-directory()
+    "~/gnu/linux/")
+  (setq project-linux-build-directory-default 'ask)
+  ;;(setq projec\t-linux-build-directory-default '"~/gnu/linux/")
+  ;;(setq project-linux-architecture-default '"x86")
+#+END_SRC
+* tex
+** latex
+#+BEGIN_SRC emacs-lisp
+  (use-package latex-preview-pane
+    :pin melpa)
+#+END_SRC
+* graphics and images
+- Download plantuml directly: http://plantuml.com/download
+#+BEGIN_SRC emacs-lisp
+  ;; (use-package plantuml-mode)
 #+END_SRC
 * Misc Packages
 ** company
@@ -933,12 +1525,13 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 	    company-show-numbers t)
       (setq company-dabbrev-downcase nil)
       (setq company-minimum-prefix-length 3)
-      (setq company-idle-delay 5)
+      (setq company-idle-delay 0.5)
       (setq company-ispell-available t)
 
       (defun text-mode-hook-setup ()
 	(make-local-variable 'company-backends)
-	(add-to-list 'company-backends 'company-ispell)
+	(when (string= system-type "gnu/linux")
+	  (add-to-list 'company-backends 'company-ispell))
 	(setq company-ispell-dictionary
 	      (expand-file-name "~/.emacs.d/misc/english-words.txt")))
       (add-hook 'text-mode-hook 'text-mode-hook-setup)
@@ -951,9 +1544,9 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 	 (t
 	  (add-to-list 'company-backends 'company-ispell)
 	  (message "company-ispell enabled!")))))
-    ;;:bind
-    ;;("M-;" . company-complete-common)
-    )
+    :bind
+    (:map text-mode-map
+	  ("M-;" . company-complete-common)))
 #+END_SRC
 
 ** helm
@@ -1001,6 +1594,8 @@ See notes [[http://ycode.org/emacs.html]] for more details.
     (("C-s" . swiper)
      ("C-c C-r" . ivy-resume)))
 
+  (use-package swiper)
+
   ;; 20170518 version needs to require the package separately
   (use-package counsel
     :bind
@@ -1026,16 +1621,33 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 #+END_SRC
 
 ** whitespace
+- builtin lisp, see [[https://github.com/emacs-mirror/emacs/blob/master/lisp/whitespace.el][GitHub whitespace.el]]
+- WIKI: https://www.emacswiki.org/emacs/WhiteSpace
+- Ergoemacs: http://ergoemacs.org/emacs/whitespace-mode.html
 #+BEGIN_SRC emacs-lisp
   (use-package whitespace
+    :diminish whitespace-mode
     :init
     (dolist (hook '(prog-mode-hook text-mode-hook))
       (add-hook hook #'whitespace-mode))
     (add-hook 'before-save-hook #'whitespace-cleanup)
     :config
-    (setq whitespace-line-column 80) ;; limit line length
-    (setq whitespace-style '(face empty lines-tail tabs trailing
-				  indentation::tab)))
+    (progn
+      (setq whitespace-line-column 80) ;; limit line length
+      (setq whitespace-style '(face trailing spaces tabs lines-tail newline
+                                    space-before-tab space-before-tab::tab
+                                    space-before-tab::space space-after-tab::tab
+                                    space-after-tab::space space-after-tab
+                                    newline-mark space-mark tab-mark))
+      (custom-set-faces
+       ;;'(whitespace-newline ((t (:foreground "#75715E"))))
+       '(whitespace-newline ((t (:foreground "#424242"))))
+       '(whitespace-tab ((t (:foreground "#424242"))))
+       '(whitespace-space ((t (:foreground "#424242" :background nil)))))
+      (setq whitespace-display-mappings
+            '((space-mark 32 [183] [46])
+              (newline-mark 10 [182 10])
+              (tab-mark 9 [?. 9] [92 9])))))
 #+END_SRC
 
 * Dictionary
@@ -1056,12 +1668,15 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 - Homepage: [[https://www.gnu.org/software/emms/][gnu emms]]
 - Download players under windows: [[https://www.mpg123.de/download/win64][mpg123 win64]], [[https://sourceforge.net/projects/mplayerwin/][mplayer]]
 #+BEGIN_SRC emacs-lisp
-  (add-to-list 'exec-path "c:/mplayer")
+  ;;(add-to-list 'exec-path "c:/mplayer")
   ;;(add-to-list 'exec-path "c:/Program Files (x86)/VideoLAN/VLC/")
+  (add-to-list 'exec-path "/usr/local/bin")
+  (add-to-list 'exec-path "/usr/local/sbin")
+  (setenv "PATH" (concat (getenv "PATH") ":/usr/local/bin"))
 
   (defun y:emms-play-default()
       (interactive)
-      (emms-play-directory "f:/CloudMusic")
+      (emms-play-directory "~/music")
       (emms-start))
 
   (use-package emms
@@ -1077,11 +1692,11 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 
       (require 'emms-player-mplayer)
       (define-emms-simple-player mplayer '(file url)
-	(regexp-opt '(".ogg" ".mp3" ".wav" ".mpg" ".mpeg" ".wmv" ".wma"
-		      ".mov" ".avi" ".divx" ".ogm" ".asf" ".mkv" ".rm" ".rmvb"
-		      ".mp4" ".flac" ".vob" ".m4a" ".flv" ".ogv" ".pls"
-		      "http://" "mms://"))
-	"mplayer" "-slave" "-quiet" "-really-quiet" "-fullscreen")
+        (regexp-opt '(".ogg" ".mp3" ".wav" ".mpg" ".mpeg" ".wmv" ".wma"
+                      ".mov" ".avi" ".divx" ".ogm" ".asf" ".mkv" ".rm" ".rmvb"
+                      ".mp4" ".flac" ".vob" ".m4a" ".flv" ".ogv" ".pls"
+                      "http://" "mms://"))
+        "mplayer" "-slave" "-quiet" "-really-quiet" "-fullscreen")
 
       ;; FIXME: configure VLC for Video
       ;; (define-emms-simple-player vlc '(file url)
@@ -1103,6 +1718,43 @@ See notes [[http://ycode.org/emacs.html]] for more details.
      ("C-c m f" . emms-play-file)
      ("C-c m d" . emms-play-directory))
     )
+#+END_SRC
+** youtube
+- Helm-youtube: https://github.com/maximus12793/helm-youtube
+- ivy-youtube: https://github.com/squiter/ivy-youtube
+#+BEGIN_SRC emacs-lisp
+  (use-package ivy-youtube
+    :init
+    (setq ivy-youtube-key "AIzaSyCzx-eHfwv2uSGlqk2xIvr6--2t9X4uidY")
+    (setq ivy-youtube-play-at "emacs-play")
+    :bind
+    ("C-c v" . ivy-youtube))
+
+  ;; (use-package helm-youtube
+  ;;   :init
+  ;;   (setq ivy-youtube-key "AIzaSyCzx-eHfwv2uSGlqk2xIvr6--2t9X4uidY")
+  ;;   (setq ivy-youtube-play-at "vlc")
+  ;;   :bind
+  ;;   ("C-c z" . helm-youtube))
+
+  (defun y:play-youtube-video (url)
+    (interactive "sURL: ")
+    (shell-command
+     (concat "youtube-dl -o - '" url "' | vlc -")))
+
+  (global-set-key (kbd "<f9> Y") 'y:play-youtube-video)
+
+  (defun y:w3m-play-youtube-video ()
+    (interactive)
+    (y:play-youtube-video
+     (w3m-print-this-url (point))))
+  (global-set-key (kbd "<f9> y") 'y:w3m-play-youtube-video)
+
+  (defun y:eww-play-youtube-video ()
+    (interactive)
+    (y:play-youtube-video
+     (url-get-url-at-point (point))))
+  (global-set-key (kbd "<f9> z") 'y:w3m-play-youtube-video)
 #+END_SRC
 * Browser
 - emacs-w3m: [[https://github.com/ecbrown/emacs-w3m][GitHub emacs-w3m]]
@@ -1153,3 +1805,43 @@ See notes [[http://ycode.org/emacs.html]] for more details.
 #+END_SRC
 * Reference
 - use-package :: [[https://github.com/jwiegley/use-package][HomePage]]\\
+* TMP
+#+BEGIN_SRC emacs-lisp
+  ;;(use-package helm-google
+  ;;  :bind
+  ;;  ("C-x g" . 'helm-google))
+  ;; (quelpa '(helm-google :fetcher github :repo "steckerhalter/helm-google"))
+  ;; (use-package sdcv)
+  ;; (require 'helm-google)
+  (setq browse-url-browser-function 'eww-browse-url)
+  (defun y:helm-google-advice()
+    (if (or (getenv "HTTP_PROXY") (getenv "http_proxy"))
+        (setq helm-google-url "https://www.google.com.hk/search?ie=UTF-8&oe=UTF-8&cr=countryCN&safe=active&hl=en&q=%s")
+      (setq helm-google-url "http://www.baidu.com/s?ie=utf-8&word=%s")))
+  ;; zh_CN: https://www.google.com.hk/search?hl=zh-CN&safe=active&q=WIKI
+
+  ;; (use-package helm-google
+  ;;   :init
+  ;;   (setq helm-google-url
+  ;;    "https://www.google.com.hk/search?hl=en&lr=lang_en&safe=active&q=%s")
+  ;;   (setq helm-google-suggest-url
+  ;;    "https://www.google.com.hk/complete/search?output=toolbar&q=%s")
+  ;;   ;; (advice-add 'helm-google :before #'y:helm-google-advice)
+  ;;   :bind
+  ;;   (("C-c g" . helm-google)))
+
+  ;; (use-package google-maps)
+
+  ;; (use-package volatile-highlights
+  ;;   :pin melpa
+  ;;   :diminish volatile-highlights-mode
+  ;;   :init
+  ;;   (volatile-highlights-mode t))
+
+#+END_SRC
+* Postscript for Elisp Area Conventions
+- Refer to [[#header][header]].
+#+BEGIN_SRC emacs-lisp
+  (format-time-string "config.el finish %Y-%m-%d %H:%M:%S" (current-time))
+  ;;; config.el ends here
+#+END_SRC
