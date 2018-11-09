@@ -1725,7 +1725,7 @@ extracts sections of category publish-config to publish html.
 #+BEGIN_SRC emacs-lisp
   (use-package ivy-youtube
     :init
-    (setq ivy-youtube-key "AIzaSyCzx-eHfwv2uSGlqk2xIvr6--2t9X4uidY")
+    (setq ivy-youtube-key "Remove Sensitive Google Youtube Key")
     (setq ivy-youtube-play-at "emacs-play")
     :bind
     ("C-c v" . ivy-youtube))
